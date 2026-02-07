@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using AiPlayground.Models;
+using CustomLinkedList = AiPlayground.Models.Collections.LinkedList<System.Drawing.Point>;
 
 namespace AiPlayground.Game;
 
@@ -11,9 +12,9 @@ namespace AiPlayground.Game;
 public class GameState
 {
     /// <summary>
-    /// 蛇身各段的位置列表
+    /// 蛇身各段的位置链表
     /// </summary>
-    public List<Point> Snake { get; set; } = new();
+    public CustomLinkedList Snake { get; set; } = new();
 
     /// <summary>
     /// 食物位置列表
@@ -65,9 +66,8 @@ public class GameState
     /// </summary>
     public GameState Clone()
     {
-        return new GameState
+        var newState = new GameState
         {
-            Snake = new List<Point>(Snake),
             Foods = new List<Point>(Foods),
             Direction = Direction,
             Score = Score,
@@ -78,5 +78,13 @@ public class GameState
             Difficulty = Difficulty,
             SpeedLevel = SpeedLevel
         };
+
+        // 复制蛇身链表
+        foreach (var segment in Snake)
+        {
+            newState.Snake.AddLast(segment);
+        }
+
+        return newState;
     }
 }

@@ -26,9 +26,9 @@ public class GameEngine
         int startY = GameConfig.GridSize / 2;
 
         _state.Snake.Clear();
-        _state.Snake.Add(new Point(startX, startY));
-        _state.Snake.Add(new Point(startX - 1, startY));
-        _state.Snake.Add(new Point(startX - 2, startY));
+        _state.Snake.AddLast(new Point(startX, startY));
+        _state.Snake.AddLast(new Point(startX - 1, startY));
+        _state.Snake.AddLast(new Point(startX - 2, startY));
 
         _state.Foods.Clear();
         SpawnFood();
@@ -46,10 +46,11 @@ public class GameEngine
     /// </summary>
     public void MoveSnake()
     {
-        Point head = _state.Snake[0];
+        Point head = _state.Snake.First!.Value;
         Point newHead = new Point(head.X + _state.Direction.X, head.Y + _state.Direction.Y);
 
-        _state.Snake.Insert(0, newHead);
+        // 在头部添加新节点
+        _state.Snake.AddFirst(newHead);
 
         bool ateFood = false;
         for (int i = _state.Foods.Count - 1; i >= 0; i--)
@@ -65,9 +66,10 @@ public class GameEngine
             }
         }
 
+        // 如果没吃到食物，移除尾部节点
         if (!ateFood)
         {
-            _state.Snake.RemoveAt(_state.Snake.Count - 1);
+            _state.Snake.RemoveLast();
         }
     }
 
@@ -76,7 +78,7 @@ public class GameEngine
     /// </summary>
     public void CheckCollisions()
     {
-        Point head = _state.Snake[0];
+        Point head = _state.Snake.First!.Value;
 
         // 检查墙壁碰撞
         if (head.X < 0 || head.X >= GameConfig.GridSize || head.Y < 0 || head.Y >= GameConfig.GridSize)
@@ -85,14 +87,16 @@ public class GameEngine
             return;
         }
 
-        // 检查自身碰撞
-        for (int i = 1; i < _state.Snake.Count; i++)
+        // 检查自身碰撞（从第二个节点开始遍历）
+        var current = _state.Snake.First!.Next;
+        while (current != null)
         {
-            if (head == _state.Snake[i])
+            if (head == current.Value)
             {
                 _state.IsGameOver = true;
                 return;
             }
+            current = current.Next;
         }
     }
 
