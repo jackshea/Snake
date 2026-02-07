@@ -191,16 +191,32 @@ public class GamePanel : DoubleBufferPanel
 
     private void DrawSnake(Graphics g)
     {
+        int gridWidth = _gameState.CurrentLevel?.GridWidth ?? GameConfig.GridSize;
+        int gridHeight = _gameState.CurrentLevel?.GridHeight ?? GameConfig.GridSize;
+
         using Brush headBrush = new SolidBrush(Color.Lime);
         using Brush bodyBrush = new SolidBrush(Color.FromArgb(0, 180, 0));
         {
-            for (int i = 0; i < _gameState.Snake.Count; i++)
+            int index = 0;
+            var current = _gameState.Snake.First;
+            while (current != null)
             {
-                g.FillRectangle(i == 0 ? headBrush : bodyBrush,
-                    _gameState.Snake[i].X * GameConfig.CellSize + 1,
-                    _gameState.Snake[i].Y * GameConfig.CellSize + 1,
-                    GameConfig.CellSize - 2,
-                    GameConfig.CellSize - 2);
+                int x = current.Value.X;
+                int y = current.Value.Y;
+
+                // 只渲染在有效网格范围内的蛇身部分
+                // 这样蛇头撞墙时不会渲染到墙外面
+                if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight)
+                {
+                    g.FillRectangle(index == 0 ? headBrush : bodyBrush,
+                        x * GameConfig.CellSize + 1,
+                        y * GameConfig.CellSize + 1,
+                        GameConfig.CellSize - 2,
+                        GameConfig.CellSize - 2);
+                }
+
+                current = current.Next;
+                index++;
             }
         }
     }
