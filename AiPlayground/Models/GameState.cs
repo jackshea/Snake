@@ -62,6 +62,31 @@ public class GameState
     public int SpeedLevel { get; set; } = 5;
 
     /// <summary>
+    /// 当前关卡
+    /// </summary>
+    public Level? CurrentLevel { get; set; }
+
+    /// <summary>
+    /// 是否已完成关卡
+    /// </summary>
+    public bool IsLevelCompleted { get; set; }
+
+    /// <summary>
+    /// 关卡用时（秒）
+    /// </summary>
+    public int LevelTime { get; set; }
+
+    /// <summary>
+    /// 本关卡已收集的食物数量
+    /// </summary>
+    public int FoodCollected { get; set; }
+
+    /// <summary>
+    /// 本关卡总共生成的食物数量
+    /// </summary>
+    public int TotalFoodSpawned { get; set; }
+
+    /// <summary>
     /// 复制游戏状态
     /// </summary>
     public GameState Clone()
@@ -76,7 +101,12 @@ public class GameState
             IsWaitingToStart = IsWaitingToStart,
             IsNewHighScore = IsNewHighScore,
             Difficulty = Difficulty,
-            SpeedLevel = SpeedLevel
+            SpeedLevel = SpeedLevel,
+            CurrentLevel = CurrentLevel,
+            IsLevelCompleted = IsLevelCompleted,
+            LevelTime = LevelTime,
+            FoodCollected = FoodCollected,
+            TotalFoodSpawned = TotalFoodSpawned
         };
 
         // 复制蛇身链表

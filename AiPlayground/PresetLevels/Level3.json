@@ -1,0 +1,82 @@
+{
+  "id": "preset_level_3",
+  "name": "移动威胁",
+  "description": "小心移动的障碍物！完成组合目标",
+  "levelNumber": 3,
+  "isUnlocked": false,
+  "isCustom": false,
+  "victoryCondition": {
+    "type": 3,
+    "targetScore": 150,
+    "targetLength": 12,
+    "mustCollectAllFood": false,
+    "foodSpawnCount": null
+  },
+  "obstacles": [
+    {
+      "type": "Static",
+      "position": { "x": 8, "y": 8 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 8, "y": 9 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 8, "y": 10 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 8, "y": 11 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 22, "y": 8 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 22, "y": 9 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 22, "y": 10 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 22, "y": 11 }
+    },
+    {
+      "type": "Dynamic",
+      "position": { "x": 15, "y": 5 },
+      "path": [
+        { "x": 15, "y": 5 },
+        { "x": 15, "y": 15 },
+        { "x": 15, "y": 5 }
+      ],
+      "moveIntervalMs": 400,
+      "loopPath": true
+    },
+    {
+      "type": "Dynamic",
+      "position": { "x": 10, "y": 15 },
+      "path": [
+        { "x": 10, "y": 15 },
+        { "x": 20, "y": 15 },
+        { "x": 10, "y": 15 }
+      ],
+      "moveIntervalMs": 500,
+      "loopPath": true
+    }
+  ],
+  "settings": {
+    "defaultDifficulty": 1,
+    "initialSpeedLevel": 5,
+    "gridWidth": 30,
+    "gridHeight": 20,
+    "snakeStartPosition": { "x": 3, "y": 10 },
+    "initialDirection": { "x": 1, "y": 0 },
+    "initialSnakeLength": 3,
+    "foodCount": 2,
+    "enableDynamicObstacles": true
+  }
+}

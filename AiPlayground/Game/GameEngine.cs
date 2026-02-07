@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using AiPlayground.Models;
+using AiPlayground.Models.Obstacles;
 
 namespace AiPlayground.Game;
 
@@ -11,6 +12,8 @@ public class GameEngine
 {
     private readonly Random _random = new();
     private readonly GameState _state;
+    private List<Obstacle> _obstacles = new();
+    private long _lastObstacleUpdateTime;
 
     public GameEngine(GameState state)
     {
@@ -18,22 +21,62 @@ public class GameEngine
     }
 
     /// <summary>
+    /// 设置当前关卡
+    /// </summary>
+    public void SetLevel(Level level)
+    {
+        _state.CurrentLevel = level;
+        _obstacles = new List<Obstacle>(level.Obstacles);
+        _state.FoodCollected = 0;
+        _state.TotalFoodSpawned = 0;
+        _state.IsLevelCompleted = false;
+        _state.LevelTime = 0;
+    }
+
+    /// <summary>
     /// 初始化游戏
     /// </summary>
     public void Initialize()
     {
-        int startX = GameConfig.GridSize / 2;
-        int startY = GameConfig.GridSize / 2;
+        // 如果有关卡设置，使用关卡的配置
+        int startX, startY, initialLength;
+        Point initialDirection;
+
+        if (_state.CurrentLevel != null)
+        {
+            startX = _state.CurrentLevel.Settings.SnakeStartPosition.X;
+            startY = _state.CurrentLevel.Settings.SnakeStartPosition.Y;
+            initialLength = _state.CurrentLevel.Settings.InitialSnakeLength;
+            initialDirection = _state.CurrentLevel.Settings.InitialDirection;
+            _state.SpeedLevel = _state.CurrentLevel.Settings.InitialSpeedLevel;
+            _state.Difficulty = _state.CurrentLevel.Settings.DefaultDifficulty;
+
+            // 重新复制障碍物列表（重置状态）
+            _obstacles = new List<Obstacle>(_state.CurrentLevel.Obstacles);
+            _state.FoodCollected = 0;
+            _state.TotalFoodSpawned = 0;
+            _state.IsLevelCompleted = false;
+            _state.LevelTime = 0;
+            _lastObstacleUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        }
+        else
+        {
+            startX = GameConfig.GridSize / 2;
+            startY = GameConfig.GridSize / 2;
+            initialLength = 3;
+            initialDirection = GameConfig.DirectionRight;
+        }
 
         _state.Snake.Clear();
-        _state.Snake.AddLast(new Point(startX, startY));
-        _state.Snake.AddLast(new Point(startX - 1, startY));
-        _state.Snake.AddLast(new Point(startX - 2, startY));
+        for (int i = initialLength - 1; i >= 0; i--)
+        {
+            _state.Snake.AddLast(new Point(startX - i * initialDirection.X, startY - i * initialDirection.Y));
+        }
 
         _state.Foods.Clear();
         SpawnFood();
 
-        _state.Direction = GameConfig.DirectionRight;
+        _state.Direction = initialDirection;
         _state.Score = 0;
         _state.IsGameOver = false;
         _state.IsPaused = false;
@@ -60,6 +103,7 @@ public class GameEngine
                 int points = GetBasePoints() + _state.SpeedLevel;
                 _state.Score += points;
                 _state.Foods.RemoveAt(i);
+                _state.FoodCollected++;
                 SpawnFood();
                 ateFood = true;
                 break;
@@ -80,8 +124,12 @@ public class GameEngine
     {
         Point head = _state.Snake.First!.Value;
 
+        // 获取当前网格大小
+        int gridWidth = _state.CurrentLevel?.GridWidth ?? GameConfig.GridSize;
+        int gridHeight = _state.CurrentLevel?.GridHeight ?? GameConfig.GridSize;
+
         // 检查墙壁碰撞
-        if (head.X < 0 || head.X >= GameConfig.GridSize || head.Y < 0 || head.Y >= GameConfig.GridSize)
+        if (head.X < 0 || head.X >= gridWidth || head.Y < 0 || head.Y >= gridHeight)
         {
             _state.IsGameOver = true;
             return;
@@ -96,6 +144,90 @@ public class GameEngine
                 _state.IsGameOver = true;
                 return;
             }
+            current = current.Next;
+        }
+
+        // 检查障碍物碰撞
+        CheckObstacleCollisions();
+    }
+
+    /// <summary>
+    /// 检查障碍物碰撞
+    /// </summary>
+    private void CheckObstacleCollisions()
+    {
+        Point head = _state.Snake.First!.Value;
+        var obstaclesToRemove = new List<Obstacle>();
+
+        foreach (var obstacle in _obstacles)
+        {
+            if (obstacle.Position == head)
+            {
+                var result = obstacle.Interact(_state);
+
+                if (result.IsDeadly)
+                {
+                    _state.IsGameOver = true;
+                    return;
+                }
+
+                if (result.ShouldRemove)
+                {
+                    obstaclesToRemove.Add(obstacle);
+                }
+
+                // 处理特殊效果
+                if (result.SpeedChange != 0)
+                {
+                    _state.SpeedLevel = Math.Max(1, Math.Min(10, _state.SpeedLevel + result.SpeedChange));
+                }
+
+                if (result.ScoreMultiplier > 1 && _state.Foods.Count > 0)
+                {
+                    // 给最近吃到的食物加分（简化处理，加固定分数）
+                    _state.Score += GetBasePoints() * (result.ScoreMultiplier - 1);
+                }
+
+                if (result.TeleportTarget.HasValue)
+                {
+                    TeleportSnake(result.TeleportTarget.Value);
+                }
+            }
+        }
+
+        // 移除已破坏的障碍物
+        foreach (var obstacle in obstaclesToRemove)
+        {
+            _obstacles.Remove(obstacle);
+        }
+    }
+
+    /// <summary>
+    /// 传送蛇到指定位置
+    /// </summary>
+    private void TeleportSnake(Point targetPosition)
+    {
+        Point head = _state.Snake.First!.Value;
+        Point offset = new Point(targetPosition.X - head.X, targetPosition.Y - head.Y);
+
+        // 移动整个蛇身
+        var newSnake = new Models.Collections.LinkedList<Point>();
+        var current = _state.Snake.First;
+        while (current != null)
+        {
+            Point newSegment = new Point(
+                current.Value.X + offset.X,
+                current.Value.Y + offset.Y
+            );
+            newSnake.AddLast(newSegment);
+            current = current.Next;
+        }
+
+        _state.Snake.Clear();
+        current = newSnake.First;
+        while (current != null)
+        {
+            _state.Snake.AddLast(current.Value);
             current = current.Next;
         }
     }
@@ -161,9 +293,24 @@ public class GameEngine
     /// </summary>
     private void SpawnFood()
     {
-        int foodCount = _state.Difficulty == Difficulty.Easy
-            ? GameConfig.EasyFoodCount
-            : GameConfig.NormalFoodCount;
+        int gridWidth = _state.CurrentLevel?.GridWidth ?? GameConfig.GridSize;
+        int gridHeight = _state.CurrentLevel?.GridHeight ?? GameConfig.GridSize;
+
+        int foodCount = _state.CurrentLevel?.Settings.FoodCount ??
+            (_state.Difficulty == Difficulty.Easy ? GameConfig.EasyFoodCount : GameConfig.NormalFoodCount);
+
+        // 检查是否有限制食物生成数量
+        if (_state.CurrentLevel?.VictoryCondition.FoodSpawnCount.HasValue == true)
+        {
+            int maxFood = _state.CurrentLevel.VictoryCondition.FoodSpawnCount.Value;
+            if (_state.TotalFoodSpawned >= maxFood)
+            {
+                return; // 已达到最大食物生成数量
+            }
+
+            // 调整要生成的食物数量
+            foodCount = Math.Min(foodCount, maxFood - _state.TotalFoodSpawned);
+        }
 
         while (_state.Foods.Count < foodCount)
         {
@@ -171,13 +318,37 @@ public class GameEngine
             do
             {
                 newFood = new Point(
-                    _random.Next(GameConfig.GridSize),
-                    _random.Next(GameConfig.GridSize)
+                    _random.Next(gridWidth),
+                    _random.Next(gridHeight)
                 );
-            } while (_state.Snake.Contains(newFood) || _state.Foods.Contains(newFood));
+            } while (IsOccupied(newFood));
 
             _state.Foods.Add(newFood);
+            _state.TotalFoodSpawned++;
         }
+    }
+
+    /// <summary>
+    /// 检查位置是否被占用
+    /// </summary>
+    private bool IsOccupied(Point position)
+    {
+        // 检查蛇身
+        if (_state.Snake.Contains(position))
+            return true;
+
+        // 检查现有食物
+        if (_state.Foods.Contains(position))
+            return true;
+
+        // 检查障碍物
+        foreach (var obstacle in _obstacles)
+        {
+            if (obstacle.Position == position)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -192,5 +363,38 @@ public class GameEngine
             Difficulty.Hard => GameConfig.HardBasePoints,
             _ => GameConfig.MediumBasePoints
         };
+    }
+
+    /// <summary>
+    /// 更新动态障碍物
+    /// </summary>
+    public void UpdateDynamicObstacles()
+    {
+        int gridWidth = _state.CurrentLevel?.GridWidth ?? GameConfig.GridSize;
+        int gridHeight = _state.CurrentLevel?.GridHeight ?? GameConfig.GridSize;
+
+        foreach (var obstacle in _obstacles)
+        {
+            obstacle.Update(gridWidth, gridHeight);
+        }
+    }
+
+    /// <summary>
+    /// 获取当前关卡的所有障碍物
+    /// </summary>
+    public IReadOnlyList<Obstacle> GetObstacles()
+    {
+        return _obstacles;
+    }
+
+    /// <summary>
+    /// 更新关卡时间（每秒调用一次）
+    /// </summary>
+    public void UpdateLevelTime()
+    {
+        if (_state.CurrentLevel != null && !_state.IsPaused && !_state.IsWaitingToStart && !_state.IsGameOver)
+        {
+            _state.LevelTime++;
+        }
     }
 }

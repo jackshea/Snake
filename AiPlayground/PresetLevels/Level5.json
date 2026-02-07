@@ -1,0 +1,129 @@
+{
+  "id": "preset_level_5",
+  "name": "终极挑战",
+  "description": "混合所有类型的障碍物，最高难度！",
+  "levelNumber": 5,
+  "isUnlocked": false,
+  "isCustom": false,
+  "victoryCondition": {
+    "type": 3,
+    "targetScore": 200,
+    "targetLength": 20,
+    "mustCollectAllFood": true,
+    "foodSpawnCount": 15
+  },
+  "obstacles": [
+    {
+      "type": "Static",
+      "position": { "x": 10, "y": 5 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 10, "y": 6 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 10, "y": 7 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 20, "y": 5 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 20, "y": 6 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 20, "y": 7 }
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 10, "y": 13 },
+      "maxPasses": 2,
+      "remainingPasses": 2
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 10, "y": 14 },
+      "maxPasses": 2,
+      "remainingPasses": 2
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 10, "y": 15 },
+      "maxPasses": 2,
+      "remainingPasses": 2
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 20, "y": 13 },
+      "maxPasses": 2,
+      "remainingPasses": 2
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 20, "y": 14 },
+      "maxPasses": 2,
+      "remainingPasses": 2
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 20, "y": 15 },
+      "maxPasses": 2,
+      "remainingPasses": 2
+    },
+    {
+      "type": "Dynamic",
+      "position": { "x": 15, "y": 9 },
+      "path": [
+        { "x": 15, "y": 9 },
+        { "x": 15, "y": 12 },
+        { "x": 12, "y": 12 },
+        { "x": 12, "y": 9 },
+        { "x": 15, "y": 9 }
+      ],
+      "moveIntervalMs": 350,
+      "loopPath": true
+    },
+    {
+      "type": "Dynamic",
+      "position": { "x": 18, "y": 9 },
+      "path": [
+        { "x": 18, "y": 9 },
+        { "x": 18, "y": 12 },
+        { "x": 21, "y": 12 },
+        { "x": 21, "y": 9 },
+        { "x": 18, "y": 9 }
+      ],
+      "moveIntervalMs": 350,
+      "loopPath": true
+    },
+    {
+      "type": "ScoreMultiplier",
+      "position": { "x": 5, "y": 5 },
+      "scoreMultiplierValue": 2
+    },
+    {
+      "type": "SpeedUp",
+      "position": { "x": 25, "y": 15 },
+      "speedChangeAmount": 3
+    },
+    {
+      "type": "SpeedDown",
+      "position": { "x": 25, "y": 5 },
+      "speedChangeAmount": -3
+    }
+  ],
+  "settings": {
+    "defaultDifficulty": 2,
+    "initialSpeedLevel": 6,
+    "gridWidth": 30,
+    "gridHeight": 20,
+    "snakeStartPosition": { "x": 3, "y": 10 },
+    "initialDirection": { "x": 1, "y": 0 },
+    "initialSnakeLength": 3,
+    "foodCount": 2,
+    "enableDynamicObstacles": true
+  }
+}

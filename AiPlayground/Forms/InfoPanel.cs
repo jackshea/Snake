@@ -14,11 +14,13 @@ public class InfoPanel : DoubleBufferPanel
 {
     private readonly GameState _gameState;
     private readonly int _highScore;
+    private readonly Game.LevelManager? _levelManager;
 
-    public InfoPanel(GameState gameState, int highScore)
+    public InfoPanel(GameState gameState, int highScore, Game.LevelManager? levelManager = null)
     {
         _gameState = gameState;
         _highScore = highScore;
+        _levelManager = levelManager;
         BackColor = Color.FromArgb(30, 30, 30);
         BorderStyle = BorderStyle.Fixed3D;
     }
@@ -47,6 +49,42 @@ public class InfoPanel : DoubleBufferPanel
 
         int y = 15;
         int x = 15;
+
+        // 如果有关卡信息，显示关卡标题
+        if (_gameState.CurrentLevel != null && _levelManager != null)
+        {
+            g.DrawString($"关卡 {_gameState.CurrentLevel.LevelNumber}: {_gameState.CurrentLevel.Name}", headerFont, goldBrush, x, y);
+            y += 35;
+
+            // 关卡目标
+            g.DrawString("通关目标", normalFont, whiteBrush, x, y);
+            y += 25;
+            string targetDesc = _levelManager.GetVictoryConditionDescription();
+            g.DrawString(targetDesc, smallFont, cyanBrush, x, y);
+            y += 30;
+
+            // 关卡进度
+            g.DrawString("目标进度", normalFont, whiteBrush, x, y);
+            y += 25;
+            double progress = _levelManager.GetLevelProgress(_gameState);
+            g.DrawString($"{progress:F1}%", headerFont, greenBrush, x, y);
+            y += 30;
+
+            // 关卡用时
+            g.DrawString("关卡用时", normalFont, whiteBrush, x, y);
+            y += 25;
+            int minutes = _gameState.LevelTime / 60;
+            int seconds = _gameState.LevelTime % 60;
+            g.DrawString($"{minutes}:{seconds:D2}", headerFont, yellowBrush, x, y);
+            y += 40;
+
+            // 分隔线
+            using (var pen = new Pen(Color.Gray, 1))
+            {
+                g.DrawLine(pen, x, y, x + 150, y);
+            }
+            y += 25;
+        }
 
         // 标题
         g.DrawString("游戏信息", headerFont, yellowBrush, x, y);

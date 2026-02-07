@@ -25,7 +25,10 @@ public partial class MainForm : Form
     private readonly GameState _gameState;
     private readonly GameEngine _gameEngine;
     private readonly HighScoreService _highScoreService;
+    private readonly LevelManager _levelManager;
+    private readonly LevelStorageService _levelStorageService;
     private readonly System.Windows.Forms.Timer _gameTimer;
+    private readonly System.Windows.Forms.Timer _levelTimeTimer;
 
     // 数据
     private int _highScore;
@@ -46,7 +49,13 @@ public partial class MainForm : Form
         _gameState = new GameState();
         _gameEngine = new GameEngine(_gameState);
         _highScoreService = new HighScoreService();
+        _levelStorageService = new LevelStorageService();
+        _levelManager = new LevelManager(_levelStorageService);
         _gameTimer = new System.Windows.Forms.Timer();
+        _levelTimeTimer = new System.Windows.Forms.Timer { Interval = 1000 }; // 每秒更新关卡时间
+
+        // 订阅关卡完成事件
+        _levelManager.LevelCompleted += OnLevelCompleted;
 
         // 加载最高分
         _highScore = _highScoreService.LoadHighScore();
@@ -55,6 +64,7 @@ public partial class MainForm : Form
         _gameEngine.Initialize();
         _gameTimer.Interval = _gameEngine.GetTimerInterval();
         _gameTimer.Tick += OnGameTick;
+        _levelTimeTimer.Tick += OnLevelTimeTick;
 
         // 初始化 UI
         InitializeComponent();
@@ -115,6 +125,16 @@ public partial class MainForm : Form
             speedMenu.DropDownItems.Add(item);
         }
 
+        // 关卡菜单
+        var levelMenu = new ToolStripMenuItem("关卡(&L)");
+        var selectLevelItem = new ToolStripMenuItem("选择关卡(&S)", null, (s, e) => ShowLevelSelection());
+        var levelEditorItem = new ToolStripMenuItem("关卡编辑器(&E)", null, (s, e) => ShowLevelEditor());
+        var resetProgressItem = new ToolStripMenuItem("重置进度(&R)", null, (s, e) => ResetProgression());
+        levelMenu.DropDownItems.Add(selectLevelItem);
+        levelMenu.DropDownItems.Add(levelEditorItem);
+        levelMenu.DropDownItems.Add(new ToolStripSeparator());
+        levelMenu.DropDownItems.Add(resetProgressItem);
+
         // 查看菜单
         var viewMenu = new ToolStripMenuItem("查看(&V)");
         viewMenu.DropDownItems.Add("最高分记录(&H)", null, (s, e) => GameHelp.ShowHighScores(_gameState.Score, _highScore));
@@ -128,6 +148,7 @@ public partial class MainForm : Form
         helpMenu.DropDownItems.Add(aboutItem);
 
         _menuStrip.Items.Add(gameMenu);
+        _menuStrip.Items.Add(levelMenu);
         _menuStrip.Items.Add(difficultyMenu);
         _menuStrip.Items.Add(speedMenu);
         _menuStrip.Items.Add(viewMenu);
@@ -155,7 +176,7 @@ public partial class MainForm : Form
         _startButton.Click += (s, e) => StartGame();
 
         // 创建游戏面板
-        _gamePanel = new GamePanel(_gameState)
+        _gamePanel = new GamePanel(_gameState, _gameEngine)
         {
             Location = new Point(0, 24),
             Size = new Size(GameConfig.GridSize * GameConfig.CellSize, GameConfig.GridSize * GameConfig.CellSize)
@@ -164,7 +185,7 @@ public partial class MainForm : Form
         Controls.Add(_gamePanel);
 
         // 创建信息面板
-        _infoPanel = new InfoPanel(_gameState, _highScore)
+        _infoPanel = new InfoPanel(_gameState, _highScore, _levelManager)
         {
             Location = new Point(GameConfig.GridSize * GameConfig.CellSize, 24),
             Size = new Size(GameConfig.InfoPanelWidth, GameConfig.GridSize * GameConfig.CellSize)
@@ -189,6 +210,7 @@ public partial class MainForm : Form
         if (_gameState.IsGameOver)
         {
             _gameTimer.Stop();
+            _levelTimeTimer.Stop();
 
             if (_highScoreService.TryUpdateHighScore(_gameState.Score, ref _highScore))
             {
@@ -207,11 +229,53 @@ public partial class MainForm : Form
             return;
         }
 
+        // 更新动态障碍物
+        _gameEngine.UpdateDynamicObstacles();
+
+        // 移动蛇和检查碰撞
         _gameEngine.MoveSnake();
         _gameEngine.CheckCollisions();
+
+        // 检查关卡通关条件
+        if (_gameState.CurrentLevel != null && !_gameState.IsLevelCompleted)
+        {
+            if (_levelManager.CheckVictoryCondition(_gameState))
+            {
+                OnLevelCompleted(_gameState.CurrentLevel);
+            }
+        }
+
         _gamePanel.Invalidate();
         _infoPanel.Invalidate();
         UpdateUI();
+    }
+
+    private void OnLevelTimeTick(object? sender, EventArgs e)
+    {
+        _gameEngine.UpdateLevelTime();
+        _infoPanel.Invalidate();
+    }
+
+    private async void OnLevelCompleted(Level level)
+    {
+        _gameState.IsLevelCompleted = true;
+        _gameTimer.Stop();
+        _levelTimeTimer.Stop();
+
+        // 保存关卡进度
+        await _levelManager.CompleteLevelAsync(_gameState);
+
+        // 显示通关消息
+        var message = $"恭喜完成关卡 {level.LevelNumber}!\n\n" +
+                     $"分数: {_gameState.Score}\n" +
+                     $"用时: {_gameState.LevelTime / 60}:{_gameState.LevelTime % 60:D2}\n\n" +
+                     "下一关已解锁！";
+
+        MessageBox.Show(message, "关卡完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+        // 显示开始按钮，但不重置游戏（让玩家看到完成状态）
+        ShowStartButton();
+        _gamePanel.Invalidate();
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
@@ -268,11 +332,97 @@ public partial class MainForm : Form
 
     private void NewGame()
     {
+        _gameState.CurrentLevel = null; // 清除关卡，回到自由模式
         _gameEngine.Initialize();
         _gameTimer.Interval = _gameEngine.GetTimerInterval();
+        _levelTimeTimer.Stop();
         _statusLabel.Text = "点击按钮开始游戏 | 空格键暂停 | F1 帮助";
         ShowStartButton();
         UpdateUI();
+    }
+
+    private void ShowLevelSelection()
+    {
+        var wasRunning = _gameTimer.Enabled;
+        if (wasRunning)
+        {
+            _gameTimer.Stop();
+            _levelTimeTimer.Stop();
+        }
+
+        using var form = new LevelSelectionForm(_levelManager);
+        if (form.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(form.SelectedLevelId))
+        {
+            if (_levelManager.TryLoadLevel(form.SelectedLevelId))
+            {
+                var level = _levelManager.CurrentLevel;
+                if (level != null)
+                {
+                    _gameEngine.SetLevel(level);
+                    _gameEngine.Initialize();
+                    _statusLabel.Text = $"关卡 {level.LevelNumber}: {level.Name} | 目标: {_levelManager.GetVictoryConditionDescription()}";
+                    ShowStartButton();
+                    UpdateUI();
+                }
+            }
+        }
+        else if (wasRunning)
+        {
+            _gameTimer.Start();
+            _levelTimeTimer.Start();
+        }
+    }
+
+    private void ShowLevelEditor()
+    {
+        var wasRunning = _gameTimer.Enabled;
+        if (wasRunning)
+        {
+            _gameTimer.Stop();
+            _levelTimeTimer.Stop();
+        }
+
+        try
+        {
+            // TODO: 实现关卡编辑器
+            MessageBox.Show(
+                "关卡编辑器功能即将推出！\n\n您可以手动编辑 JSON 文件来创建自定义关卡。\n" +
+                "自定义关卡保存在:\n" +
+                "%AppData%\\AiPlayground\\Levels\\Custom\\",
+                "关卡编辑器",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        finally
+        {
+            if (wasRunning && !_gameState.IsGameOver)
+            {
+                _gameTimer.Start();
+                _levelTimeTimer.Start();
+            }
+        }
+    }
+
+    private void ResetProgression()
+    {
+        var result = MessageBox.Show(
+            "确定要重置所有关卡进度吗？\n\n这将锁定所有关卡（除第一关外），并清除所有完成记录。",
+            "重置进度",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning);
+
+        if (result == DialogResult.Yes)
+        {
+            if (_levelManager.ResetProgression())
+            {
+                MessageBox.Show("关卡进度已重置！", "成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                UpdateUI();
+            }
+            else
+            {
+                MessageBox.Show("重置进度失败。", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 
     private void StartGame()
@@ -281,6 +431,13 @@ public partial class MainForm : Form
         HideStartButton();
         _gameTimer.Interval = _gameEngine.GetTimerInterval();
         _gameTimer.Start();
+
+        // 如果是关卡模式，启动关卡计时器
+        if (_gameState.CurrentLevel != null)
+        {
+            _levelTimeTimer.Start();
+        }
+
         _statusLabel.Text = "游戏进行中... | 空格键暂停";
     }
 
@@ -397,6 +554,7 @@ public partial class MainForm : Form
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
         _gameTimer?.Dispose();
+        _levelTimeTimer?.Dispose();
         base.OnFormClosing(e);
     }
 }

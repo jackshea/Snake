@@ -1,0 +1,106 @@
+{
+  "id": "preset_level_4",
+  "name": "可破防线",
+  "description": "可破坏障碍物可以穿过一次，收集所有食物通关",
+  "levelNumber": 4,
+  "isUnlocked": false,
+  "isCustom": false,
+  "victoryCondition": {
+    "type": 2,
+    "targetScore": 0,
+    "targetLength": 0,
+    "mustCollectAllFood": true,
+    "foodSpawnCount": 10
+  },
+  "obstacles": [
+    {
+      "type": "Destructible",
+      "position": { "x": 10, "y": 5 },
+      "maxPasses": 1,
+      "remainingPasses": 1
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 10, "y": 6 },
+      "maxPasses": 1,
+      "remainingPasses": 1
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 10, "y": 7 },
+      "maxPasses": 1,
+      "remainingPasses": 1
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 10, "y": 8 },
+      "maxPasses": 1,
+      "remainingPasses": 1
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 10, "y": 9 },
+      "maxPasses": 1,
+      "remainingPasses": 1
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 10, "y": 10 },
+      "maxPasses": 1,
+      "remainingPasses": 1
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 10, "y": 11 },
+      "maxPasses": 1,
+      "remainingPasses": 1
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 20, "y": 5 },
+      "maxPasses": 1,
+      "remainingPasses": 1
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 20, "y": 6 },
+      "maxPasses": 1,
+      "remainingPasses": 1
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 20, "y": 7 },
+      "maxPasses": 1,
+      "remainingPasses": 1
+    },
+    {
+      "type": "Destructible",
+      "position": { "x": 20, "y": 8 },
+      "maxPasses": 1,
+      "remainingPasses": 1
+    },
+    {
+      "type": "Static",
+      "position": { "x": 15, "y": 12 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 15, "y": 13 }
+    },
+    {
+      "type": "Static",
+      "position": { "x": 15, "y": 14 }
+    }
+  ],
+  "settings": {
+    "defaultDifficulty": 1,
+    "initialSpeedLevel": 5,
+    "gridWidth": 30,
+    "gridHeight": 20,
+    "snakeStartPosition": { "x": 5, "y": 10 },
+    "initialDirection": { "x": 1, "y": 0 },
+    "initialSnakeLength": 3,
+    "foodCount": 2,
+    "enableDynamicObstacles": false
+  }
+}

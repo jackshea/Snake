@@ -1,0 +1,27 @@
+{
+  "id": "preset_level_1",
+  "name": "初出茅庐",
+  "description": "熟悉游戏操作，达到目标分数即可通关",
+  "levelNumber": 1,
+  "isUnlocked": true,
+  "isCustom": false,
+  "victoryCondition": {
+    "type": 0,
+    "targetScore": 100,
+    "targetLength": 10,
+    "mustCollectAllFood": false,
+    "foodSpawnCount": null
+  },
+  "obstacles": [],
+  "settings": {
+    "defaultDifficulty": 0,
+    "initialSpeedLevel": 3,
+    "gridWidth": 30,
+    "gridHeight": 20,
+    "snakeStartPosition": { "x": 5, "y": 5 },
+    "initialDirection": { "x": 1, "y": 0 },
+    "initialSnakeLength": 3,
+    "foodCount": 1,
+    "enableDynamicObstacles": false
+  }
+}
