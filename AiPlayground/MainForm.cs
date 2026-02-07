@@ -159,6 +159,8 @@ public partial class MainForm : Form
 
     private void InitializeLayout()
     {
+        UpdateLayoutSize();
+
         // 创建开始按钮
         _startButton = new Button
         {
@@ -178,8 +180,7 @@ public partial class MainForm : Form
         // 创建游戏面板
         _gamePanel = new GamePanel(_gameState, _gameEngine)
         {
-            Location = new Point(0, 24),
-            Size = new Size(GameConfig.GridSize * GameConfig.CellSize, GameConfig.GridSize * GameConfig.CellSize)
+            Location = new Point(0, 24)
         };
         _gamePanel.Controls.Add(_startButton);
         Controls.Add(_gamePanel);
@@ -187,8 +188,7 @@ public partial class MainForm : Form
         // 创建信息面板
         _infoPanel = new InfoPanel(_gameState, _highScore, _levelManager)
         {
-            Location = new Point(GameConfig.GridSize * GameConfig.CellSize, 24),
-            Size = new Size(GameConfig.InfoPanelWidth, GameConfig.GridSize * GameConfig.CellSize)
+            Location = new Point(0, 24)
         };
         Controls.Add(_infoPanel);
 
@@ -198,11 +198,34 @@ public partial class MainForm : Form
         _statusStrip.Items.Add(_statusLabel);
         Controls.Add(_statusStrip);
 
+        // 更新面板位置和大小
+        UpdatePanelSizes();
+
         // 居中按钮
         CenterButton();
 
         // 事件处理
         KeyDown += OnKeyDown;
+    }
+
+    private void UpdateLayoutSize()
+    {
+        int gridWidth = _gameState.CurrentLevel?.GridWidth ?? GameConfig.GridSize;
+        int gridHeight = _gameState.CurrentLevel?.GridHeight ?? GameConfig.GridSize;
+
+        ClientSize = new Size(
+            gridWidth * GameConfig.CellSize + GameConfig.InfoPanelWidth,
+            gridHeight * GameConfig.CellSize + 25);
+    }
+
+    private void UpdatePanelSizes()
+    {
+        int gridWidth = _gameState.CurrentLevel?.GridWidth ?? GameConfig.GridSize;
+        int gridHeight = _gameState.CurrentLevel?.GridHeight ?? GameConfig.GridSize;
+
+        _gamePanel.Size = new Size(gridWidth * GameConfig.CellSize, gridHeight * GameConfig.CellSize);
+        _infoPanel.Location = new Point(gridWidth * GameConfig.CellSize, 24);
+        _infoPanel.Size = new Size(GameConfig.InfoPanelWidth, gridHeight * GameConfig.CellSize);
     }
 
     private void OnGameTick(object? sender, EventArgs e)
@@ -334,6 +357,9 @@ public partial class MainForm : Form
     {
         _gameState.CurrentLevel = null; // 清除关卡，回到自由模式
         _gameEngine.Initialize();
+        UpdateLayoutSize();
+        UpdatePanelSizes();
+        CenterButton();
         _gameTimer.Interval = _gameEngine.GetTimerInterval();
         _levelTimeTimer.Stop();
         _statusLabel.Text = "点击按钮开始游戏 | 空格键暂停 | F1 帮助";
@@ -360,6 +386,9 @@ public partial class MainForm : Form
                 {
                     _gameEngine.SetLevel(level);
                     _gameEngine.Initialize();
+                    UpdateLayoutSize();
+                    UpdatePanelSizes();
+                    CenterButton();
                     _statusLabel.Text = $"关卡 {level.LevelNumber}: {level.Name} | 目标: {_levelManager.GetVictoryConditionDescription()}";
                     ShowStartButton();
                     UpdateUI();

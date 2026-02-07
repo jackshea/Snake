@@ -50,11 +50,17 @@ public class GamePanel : DoubleBufferPanel
 
     private void DrawGrid(Graphics g)
     {
+        int gridWidth = _gameState.CurrentLevel?.GridWidth ?? GameConfig.GridSize;
+        int gridHeight = _gameState.CurrentLevel?.GridHeight ?? GameConfig.GridSize;
+
         using Pen gridPen = new Pen(Color.FromArgb(30, Color.Gray), 1);
-        for (int i = 0; i <= GameConfig.GridSize; i++)
+        for (int i = 0; i <= gridWidth; i++)
         {
-            g.DrawLine(gridPen, i * GameConfig.CellSize, 0, i * GameConfig.CellSize, GameConfig.GridSize * GameConfig.CellSize);
-            g.DrawLine(gridPen, 0, i * GameConfig.CellSize, GameConfig.GridSize * GameConfig.CellSize, i * GameConfig.CellSize);
+            g.DrawLine(gridPen, i * GameConfig.CellSize, 0, i * GameConfig.CellSize, gridHeight * GameConfig.CellSize);
+        }
+        for (int i = 0; i <= gridHeight; i++)
+        {
+            g.DrawLine(gridPen, 0, i * GameConfig.CellSize, gridWidth * GameConfig.CellSize, i * GameConfig.CellSize);
         }
     }
 
