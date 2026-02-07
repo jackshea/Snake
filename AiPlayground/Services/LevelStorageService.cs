@@ -190,6 +190,14 @@ public class LevelStorageService
     }
 
     /// <summary>
+    /// 获取 JSON 序列化选项（供外部使用）
+    /// </summary>
+    public JsonSerializerOptions GetJsonOptions()
+    {
+        return _jsonOptions;
+    }
+
+    /// <summary>
     /// 保存关卡进度
     /// </summary>
     public async Task<bool> SaveProgressionAsync(LevelProgression progression)

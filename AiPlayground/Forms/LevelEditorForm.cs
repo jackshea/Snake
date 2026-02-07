@@ -2,6 +2,9 @@ using System;
 using System.Drawing;
 using System.Windows.Forms;
 using AiPlayground.Models;
+using AiPlayground.Services;
+using AiPlayground.Game;
+using System.Text.Json;
 
 namespace AiPlayground.Forms;
 
@@ -15,13 +18,19 @@ public class LevelEditorForm : Form
     private ToolBoxPanel _toolBoxPanel = null!;
     private PropertiesPanel _propertiesPanel = null!;
     private MenuStrip _menuStrip = null!;
+    private readonly LevelStorageService _storageService;
+    private readonly LevelManager _levelManager;
+    private bool _hasUnsavedChanges;
 
-    public LevelEditorForm()
+    public LevelEditorForm(LevelStorageService storageService, LevelManager levelManager)
     {
+        _storageService = storageService;
+        _levelManager = levelManager;
         _currentLevel = Level.CreateCustomLevel("新关卡");
         InitializeForm();
         InitializeMenu();
         InitializeLayout();
+        SetupEventSubscriptions();
     }
 
     private void InitializeForm()
@@ -33,6 +42,39 @@ public class LevelEditorForm : Form
         BackColor = Color.FromArgb(45, 45, 45);
     }
 
+    private void SetupEventSubscriptions()
+    {
+        _propertiesPanel.PropertyChanged += MarkAsDirty;
+        _editorPanel.ObstacleAdded += MarkAsDirty;
+        _editorPanel.ObstacleRemoved += MarkAsDirty;
+    }
+
+    private void MarkAsDirty()
+    {
+        if (!_hasUnsavedChanges)
+        {
+            _hasUnsavedChanges = true;
+            UpdateWindowTitle();
+        }
+    }
+
+    private void MarkAsClean()
+    {
+        if (_hasUnsavedChanges)
+        {
+            _hasUnsavedChanges = false;
+            UpdateWindowTitle();
+        }
+    }
+
+    private void UpdateWindowTitle()
+    {
+        string levelName = string.IsNullOrWhiteSpace(_currentLevel.Name) ? "新关卡" : _currentLevel.Name;
+        Text = _hasUnsavedChanges
+            ? $"关卡编辑器 - {levelName} ●"
+            : $"关卡编辑器 - {levelName}";
+    }
+
     private void InitializeMenu()
     {
         _menuStrip = new MenuStrip();
@@ -41,8 +83,8 @@ public class LevelEditorForm : Form
         var fileMenu = new ToolStripMenuItem("文件(&F)");
         fileMenu.DropDownItems.Add("新建(&N)", null, (s, e) => NewLevel());
         fileMenu.DropDownItems.Add("打开(&O)", null, (s, e) => OpenLevel());
-        fileMenu.DropDownItems.Add("保存(&S)", null, (s, e) => SaveLevel());
-        fileMenu.DropDownItems.Add("另存为(&A)", null, (s, e) => SaveLevelAs());
+        fileMenu.DropDownItems.Add("保存(&S)", null, (s, e) => SaveLevelSync());
+        fileMenu.DropDownItems.Add("另存为(&A)", null, (s, e) => SaveLevelAsSync());
         fileMenu.DropDownItems.Add(new ToolStripSeparator());
         fileMenu.DropDownItems.Add("测试关卡(&T)", null, (s, e) => TestLevel());
         fileMenu.DropDownItems.Add(new ToolStripSeparator());
@@ -129,44 +171,213 @@ public class LevelEditorForm : Form
         _toolBoxPanel.SetLevel(_currentLevel);
         _propertiesPanel.SetLevel(_currentLevel);
         _editorPanel.SetLevel(_currentLevel);
+        MarkAsClean();
     }
 
     private void OpenLevel()
     {
         if (!ConfirmSaveChanges()) return;
 
-        using var dialog = new OpenFileDialog
-        {
-            Filter = "JSON 文件 (*.json)|*.json|所有文件 (*.*)|*.*",
-            Title = "打开关卡",
-            InitialDirectory = System.IO.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "AiPlayground", "Levels", "Custom"
-            )
-        };
+        // 重新加载自定义关卡列表
+        _levelManager.ReloadLevels();
+        var customLevels = _levelManager.CustomLevels.ToList();
 
-        if (dialog.ShowDialog() == DialogResult.OK)
+        using var dialog = new EditorLevelSelectionForm(customLevels);
+        if (dialog.ShowDialog(this) == DialogResult.OK)
         {
-            // TODO: 实现加载关卡逻辑
-            MessageBox.Show("加载功能即将推出", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (dialog.SelectedLevel != null)
+            {
+                LoadLevelIntoEditor(dialog.SelectedLevel);
+            }
+
+            // 处理删除
+            if (!string.IsNullOrEmpty(dialog.LevelIdToDelete))
+            {
+                _levelManager.DeleteCustomLevel(dialog.LevelIdToDelete);
+            }
+        }
+        else if (!string.IsNullOrEmpty(dialog.LevelIdToDelete))
+        {
+            // 用户取消了加载，但可能删除了关卡
+            _levelManager.DeleteCustomLevel(dialog.LevelIdToDelete);
         }
     }
 
-    private void SaveLevel()
+    private void LoadLevelIntoEditor(Level level)
     {
-        // TODO: 实现保存关卡逻辑
-        MessageBox.Show("保存功能即将推出\n\n提示：您可以手动复制关卡数据并保存为 JSON 文件", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-    }
-
-    private void SaveLevelAs()
-    {
-        SaveLevel();
+        _currentLevel = CloneLevel(level);
+        _propertiesPanel.SetLevel(_currentLevel);
+        _editorPanel.SetLevel(_currentLevel);
+        MarkAsClean();
     }
 
     private void TestLevel()
     {
-        // TODO: 实现测试关卡逻辑
-        MessageBox.Show("测试功能即将推出", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        // 验证关卡
+        var (isValid, errorMessage) = ValidateLevelForTest();
+
+        if (!isValid)
+        {
+            MessageBox.Show(
+                $"关卡无法测试：\n\n{errorMessage}",
+                "验证失败",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            return;
+        }
+
+        // 提示保存
+        if (_hasUnsavedChanges)
+        {
+            var result = MessageBox.Show(
+                "当前关卡有未保存的更改，是否保存后再测试？\n\n" +
+                "点击「是」保存并测试\n" +
+                "点击「否」直接测试当前版本\n" +
+                "点击「取消」返回编辑器",
+                "未保存的更改",
+                MessageBoxButtons.YesNoCancel,
+                MessageBoxIcon.Question);
+
+            if (result == DialogResult.Cancel) return;
+
+            if (result == DialogResult.Yes)
+            {
+                if (string.IsNullOrWhiteSpace(_currentLevel.Name))
+                {
+                    using var dialog = new SaveLevelDialog(_currentLevel.Name, _currentLevel.Description);
+                    if (dialog.ShowDialog(this) == DialogResult.OK)
+                    {
+                        _currentLevel.Name = dialog.LevelName;
+                        _currentLevel.Description = dialog.LevelDescription;
+                    }
+                    else
+                    {
+                        return; // 用户取消
+                    }
+                }
+
+                // 同步保存
+                var saved = SaveLevelInternalSync();
+                if (!saved) return;
+            }
+        }
+
+        // 启动测试
+        try
+        {
+            var testForm = new TestGameForm(_currentLevel, _levelManager);
+            testForm.Show(this);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"启动测试失败：\n\n{ex.Message}",
+                "错误",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+    }
+
+    private void SaveLevelSync()
+    {
+        if (string.IsNullOrWhiteSpace(_currentLevel.Name))
+        {
+            // 需要输入名称
+            SaveLevelAsSync();
+            return;
+        }
+
+        SaveLevelInternalSync();
+    }
+
+    private void SaveLevelAsSync()
+    {
+        using var dialog = new SaveLevelDialog(_currentLevel.Name, _currentLevel.Description);
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            _currentLevel.Name = dialog.LevelName;
+            _currentLevel.Description = dialog.LevelDescription;
+
+            // 如果是另存为，生成新的 ID
+            if (!string.IsNullOrEmpty(_currentLevel.Id))
+            {
+                _currentLevel.Id = Guid.NewGuid().ToString();
+            }
+
+            SaveLevelInternalSync();
+        }
+    }
+
+    private bool SaveLevelInternalSync()
+    {
+        if (string.IsNullOrWhiteSpace(_currentLevel.Name))
+        {
+            MessageBox.Show("请输入关卡名称", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return false;
+        }
+
+        // 使用同步方式等待异步方法
+        var task = _levelManager.SaveCustomLevelAsync(_currentLevel);
+        task.Wait(); // 简单的同步等待
+
+        bool success = task.Result;
+        if (success)
+        {
+            MarkAsClean();
+            MessageBox.Show($"关卡 \"{_currentLevel.Name}\" 已保存！", "保存成功", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return true;
+        }
+        else
+        {
+            MessageBox.Show("保存关卡失败，请重试", "保存失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return false;
+        }
+    }
+
+    private (bool IsValid, string? ErrorMessage) ValidateLevelForTest()
+    {
+        // 检查起点位置
+        var startPos = _currentLevel.Settings.SnakeStartPosition;
+        if (startPos.X < 0 || startPos.X >= _currentLevel.GridWidth ||
+            startPos.Y < 0 || startPos.Y >= _currentLevel.GridHeight)
+        {
+            return (false, "起点位置超出网格范围");
+        }
+
+        // 检查起点是否有障碍物
+        if (_currentLevel.Obstacles.Any(o => o.Position == startPos))
+        {
+            return (false, "起点位置有障碍物，蛇无法开始游戏");
+        }
+
+        // 检查通关条件
+        var condition = _currentLevel.VictoryCondition;
+        if (condition.Type == VictoryConditionType.TargetScore && condition.TargetScore <= 0)
+        {
+            return (false, "目标分数必须大于 0");
+        }
+
+        if (condition.Type == VictoryConditionType.TargetLength && condition.TargetLength <= 0)
+        {
+            return (false, "目标长度必须大于 0");
+        }
+
+        if (condition.Type == VictoryConditionType.Combined &&
+            condition.TargetScore <= 0 &&
+            condition.TargetLength <= 0 &&
+            !condition.MustCollectAllFood)
+        {
+            return (false, "组合通关条件至少需要设置一个目标");
+        }
+
+        // 检查网格尺寸
+        if (_currentLevel.GridWidth < 10 || _currentLevel.GridWidth > 50 ||
+            _currentLevel.GridHeight < 10 || _currentLevel.GridHeight > 50)
+        {
+            return (false, "网格尺寸应在 10x10 到 50x50 之间");
+        }
+
+        return (true, null);
     }
 
     private void ClearObstacles()
@@ -175,6 +386,7 @@ public class LevelEditorForm : Form
         {
             _currentLevel.Obstacles.Clear();
             _editorPanel.Invalidate();
+            MarkAsDirty();
         }
     }
 
@@ -221,7 +433,34 @@ public class LevelEditorForm : Form
 
     private bool ConfirmSaveChanges()
     {
-        // TODO: 检查是否有未保存的更改
-        return true;
+        if (!_hasUnsavedChanges) return true;
+
+        var result = MessageBox.Show(
+            "当前关卡有未保存的更改，是否保存？",
+            "未保存的更改",
+            MessageBoxButtons.YesNoCancel,
+            MessageBoxIcon.Warning);
+
+        if (result == DialogResult.Cancel) return false;
+        if (result == DialogResult.No) return true;
+
+        // Yes - try to save
+        return SaveLevelInternalSync();
+    }
+
+    private Level CloneLevel(Level source)
+    {
+        var json = JsonSerializer.Serialize(source, _storageService.GetJsonOptions());
+        return JsonSerializer.Deserialize<Level>(json, _storageService.GetJsonOptions())!;
+    }
+
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        base.OnFormClosing(e);
+
+        if (e.CloseReason == CloseReason.UserClosing && !ConfirmSaveChanges())
+        {
+            e.Cancel = true;
+        }
     }
 }

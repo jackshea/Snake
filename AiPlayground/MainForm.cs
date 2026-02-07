@@ -457,14 +457,11 @@ public partial class MainForm : Form
 
         try
         {
-            // TODO: 实现关卡编辑器
-            MessageBox.Show(
-                "关卡编辑器功能即将推出！\n\n您可以手动编辑 JSON 文件来创建自定义关卡。\n" +
-                "自定义关卡保存在:\n" +
-                "%AppData%\\AiPlayground\\Levels\\Custom\\",
-                "关卡编辑器",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+            var editorForm = new LevelEditorForm(_levelStorageService, _levelManager);
+            editorForm.ShowDialog(this);
+
+            // 重新加载关卡列表，因为用户可能创建了新关卡
+            _levelManager.ReloadLevels();
         }
         finally
         {

@@ -19,6 +19,8 @@ public class LevelEditorPanel : DoubleBufferPanel
     private float _zoom = 1.0f;
 
     public event Action<object?>? SelectionChanged;
+    public event Action? ObstacleAdded;
+    public event Action? ObstacleRemoved;
 
     public ObstacleType SelectedTool
     {
@@ -219,6 +221,7 @@ public class LevelEditorPanel : DoubleBufferPanel
         _level.Obstacles.Add(newObstacle);
         _selectedObject = newObstacle;
         SelectionChanged?.Invoke(_selectedObject);
+        ObstacleAdded?.Invoke();
     }
 
     private void HandleRightClick(Point position)
@@ -232,6 +235,7 @@ public class LevelEditorPanel : DoubleBufferPanel
                 _selectedObject = null;
                 SelectionChanged?.Invoke(null);
             }
+            ObstacleRemoved?.Invoke();
         }
     }
 }
