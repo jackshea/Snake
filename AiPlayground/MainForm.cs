@@ -32,6 +32,7 @@ public partial class MainForm : Form
 
     // 数据
     private int _highScore;
+    private bool _isShowingLevelComplete; // 防止重复弹出关卡完成窗口
 
     public MainForm()
     {
@@ -260,7 +261,7 @@ public partial class MainForm : Form
         _gameEngine.CheckCollisions();
 
         // 检查关卡通关条件
-        if (_gameState.CurrentLevel != null && !_gameState.IsLevelCompleted)
+        if (_gameState.CurrentLevel != null && !_gameState.IsLevelCompleted && !_isShowingLevelComplete)
         {
             if (_levelManager.CheckVictoryCondition(_gameState))
             {
@@ -268,6 +269,7 @@ public partial class MainForm : Form
                 _gameTimer.Stop();
                 _levelTimeTimer.Stop();
                 _gameState.IsLevelCompleted = true;
+                _isShowingLevelComplete = true; // 设置标志，防止重复调用
 
                 OnLevelCompleted(_gameState.CurrentLevel);
                 return; // 退出游戏循环
@@ -287,51 +289,55 @@ public partial class MainForm : Form
 
     private async void OnLevelCompleted(Level level)
     {
-        _gameState.IsLevelCompleted = true;
-        _gameTimer.Stop();
-        _levelTimeTimer.Stop();
-
-        // 保存关卡进度
-        await _levelManager.CompleteLevelAsync(_gameState);
-
-        // 显示完成界面
-        using var completeForm = new LevelCompleteForm(level, _gameState, _levelManager);
-        var result = completeForm.ShowDialog();
-
-        if (result == DialogResult.OK)
+        try
         {
-            if (completeForm.PlayNextLevel)
+            // 保存关卡进度
+            await _levelManager.CompleteLevelAsync(_gameState);
+
+            // 显示完成界面
+            using var completeForm = new LevelCompleteForm(level, _gameState, _levelManager);
+            var result = completeForm.ShowDialog();
+
+            if (result == DialogResult.OK)
             {
-                // 加载下一关
-                var nextLevel = _levelManager.GetLevelByNumber(level.LevelNumber + 1);
-                if (nextLevel != null)
+                if (completeForm.PlayNextLevel)
                 {
-                    _gameEngine.SetLevel(nextLevel);
+                    // 加载下一关
+                    var nextLevel = _levelManager.GetLevelByNumber(level.LevelNumber + 1);
+                    if (nextLevel != null)
+                    {
+                        _gameEngine.SetLevel(nextLevel);
+                        _gameEngine.Initialize();
+                        UpdateLayoutSize();
+                        UpdatePanelSizes();
+                        CenterButton();
+                        _statusLabel.Text = $"关卡 {nextLevel.LevelNumber}: {nextLevel.Name} | 目标: {_levelManager.GetVictoryConditionDescription()}";
+                        ShowStartButton();
+                        UpdateUI();
+                    }
+                }
+                else
+                {
+                    // 重新挑战当前关卡
                     _gameEngine.Initialize();
-                    UpdateLayoutSize();
-                    UpdatePanelSizes();
-                    CenterButton();
-                    _statusLabel.Text = $"关卡 {nextLevel.LevelNumber}: {nextLevel.Name} | 目标: {_levelManager.GetVictoryConditionDescription()}";
+                    _statusLabel.Text = $"关卡 {level.LevelNumber}: {level.Name} | 目标: {_levelManager.GetVictoryConditionDescription()}";
                     ShowStartButton();
                     UpdateUI();
                 }
             }
             else
             {
-                // 重新挑战当前关卡
-                _gameEngine.Initialize();
-                _statusLabel.Text = $"关卡 {level.LevelNumber}: {level.Name} | 目标: {_levelManager.GetVictoryConditionDescription()}";
+                // 返回
                 ShowStartButton();
-                UpdateUI();
             }
-        }
-        else
-        {
-            // 返回
-            ShowStartButton();
-        }
 
-        _gamePanel.Invalidate();
+            _gamePanel.Invalidate();
+        }
+        finally
+        {
+            // 重置标志，允许下次触发
+            _isShowingLevelComplete = false;
+        }
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
@@ -389,6 +395,8 @@ public partial class MainForm : Form
     private void NewGame()
     {
         _gameState.CurrentLevel = null; // 清除关卡，回到自由模式
+        _gameState.IsLevelCompleted = false;
+        _isShowingLevelComplete = false; // 重置标志
         _gameEngine.Initialize();
         UpdateLayoutSize();
         UpdatePanelSizes();
@@ -433,6 +441,9 @@ public partial class MainForm : Form
             _gameTimer.Start();
             _levelTimeTimer.Start();
         }
+
+        // 重置标志
+        _isShowingLevelComplete = false;
     }
 
     private void ShowLevelEditor()
