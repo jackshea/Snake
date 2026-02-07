@@ -288,16 +288,43 @@ public partial class MainForm : Form
         // 保存关卡进度
         await _levelManager.CompleteLevelAsync(_gameState);
 
-        // 显示通关消息
-        var message = $"恭喜完成关卡 {level.LevelNumber}!\n\n" +
-                     $"分数: {_gameState.Score}\n" +
-                     $"用时: {_gameState.LevelTime / 60}:{_gameState.LevelTime % 60:D2}\n\n" +
-                     "下一关已解锁！";
+        // 显示完成界面
+        using var completeForm = new LevelCompleteForm(level, _gameState, _levelManager);
+        var result = completeForm.ShowDialog();
 
-        MessageBox.Show(message, "关卡完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        if (result == DialogResult.OK)
+        {
+            if (completeForm.PlayNextLevel)
+            {
+                // 加载下一关
+                var nextLevel = _levelManager.GetLevelByNumber(level.LevelNumber + 1);
+                if (nextLevel != null)
+                {
+                    _gameEngine.SetLevel(nextLevel);
+                    _gameEngine.Initialize();
+                    UpdateLayoutSize();
+                    UpdatePanelSizes();
+                    CenterButton();
+                    _statusLabel.Text = $"关卡 {nextLevel.LevelNumber}: {nextLevel.Name} | 目标: {_levelManager.GetVictoryConditionDescription()}";
+                    ShowStartButton();
+                    UpdateUI();
+                }
+            }
+            else
+            {
+                // 重新挑战当前关卡
+                _gameEngine.Initialize();
+                _statusLabel.Text = $"关卡 {level.LevelNumber}: {level.Name} | 目标: {_levelManager.GetVictoryConditionDescription()}";
+                ShowStartButton();
+                UpdateUI();
+            }
+        }
+        else
+        {
+            // 返回
+            ShowStartButton();
+        }
 
-        // 显示开始按钮，但不重置游戏（让玩家看到完成状态）
-        ShowStartButton();
         _gamePanel.Invalidate();
     }
 
