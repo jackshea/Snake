@@ -94,7 +94,15 @@ public class GameEngine
         Point head = _state.Snake.First!.Value;
         Point newHead = new Point(head.X + _state.Direction.X, head.Y + _state.Direction.Y);
 
-        // 在头部添加新节点
+        // 先检查下一步是否会碰撞（在移动之前检查）
+        if (WillCollide(newHead))
+        {
+            // 会碰撞，不移动蛇，直接游戏结束
+            _state.IsGameOver = true;
+            return;
+        }
+
+        // 不会碰撞，才移动蛇
         _state.Snake.AddFirst(newHead);
 
         bool ateFood = false;
@@ -130,7 +138,7 @@ public class GameEngine
         int gridWidth = _state.CurrentLevel?.GridWidth ?? GameConfig.GridSize;
         int gridHeight = _state.CurrentLevel?.GridHeight ?? GameConfig.GridSize;
 
-        // 检查墙壁碰撞
+        // 检查墙壁碰撞（理论上不应该走到这里，因为MoveSnake已经检查过了）
         if (head.X < 0 || head.X >= gridWidth || head.Y < 0 || head.Y >= gridHeight)
         {
             _state.IsGameOver = true;
@@ -151,6 +159,48 @@ public class GameEngine
 
         // 检查障碍物碰撞
         CheckObstacleCollisions();
+    }
+
+    /// <summary>
+    /// 检查新头部位置是否会碰撞（用于移动前预测）
+    /// </summary>
+    private bool WillCollide(Point newHead)
+    {
+        int gridWidth = _state.CurrentLevel?.GridWidth ?? GameConfig.GridSize;
+        int gridHeight = _state.CurrentLevel?.GridHeight ?? GameConfig.GridSize;
+
+        // 检查墙壁碰撞
+        if (newHead.X < 0 || newHead.X >= gridWidth || newHead.Y < 0 || newHead.Y >= gridHeight)
+        {
+            return true;
+        }
+
+        // 检查自身碰撞
+        var current = _state.Snake.First;
+        while (current != null)
+        {
+            if (newHead == current.Value)
+            {
+                return true;
+            }
+            current = current.Next;
+        }
+
+        // 检查障碍物碰撞
+        foreach (var obstacle in _obstacles)
+        {
+            if (obstacle.Position == newHead)
+            {
+                // 检查是否是致命障碍物
+                var result = obstacle.Interact(_state);
+                if (result.IsDeadly)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
