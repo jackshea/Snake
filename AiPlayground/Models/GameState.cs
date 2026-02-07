@@ -24,7 +24,7 @@ public class GameState
     /// <summary>
     /// 当前移动方向
     /// </summary>
-    public Point Direction { get; set; } = new(1, 0);
+    public Point Direction { get; set; } = GameConfig.DirectionRight;
 
     /// <summary>
     /// 当前分数

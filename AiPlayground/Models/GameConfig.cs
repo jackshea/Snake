@@ -1,3 +1,5 @@
+using System.Drawing;
+
 namespace AiPlayground.Models;
 
 /// <summary>
@@ -5,6 +7,25 @@ namespace AiPlayground.Models;
 /// </summary>
 public static class GameConfig
 {
+    /// <summary>
+    /// 方向常量 - 上
+    /// </summary>
+    public static readonly Point DirectionUp = new(0, -1);
+
+    /// <summary>
+    /// 方向常量 - 下
+    /// </summary>
+    public static readonly Point DirectionDown = new(0, 1);
+
+    /// <summary>
+    /// 方向常量 - 左
+    /// </summary>
+    public static readonly Point DirectionLeft = new(-1, 0);
+
+    /// <summary>
+    /// 方向常量 - 右
+    /// </summary>
+    public static readonly Point DirectionRight = new(1, 0);
     /// <summary>
     /// 网格大小（格子数量）
     /// </summary>

@@ -33,7 +33,7 @@ public class GameEngine
         _state.Foods.Clear();
         SpawnFood();
 
-        _state.Direction = new Point(1, 0);
+        _state.Direction = GameConfig.DirectionRight;
         _state.Score = 0;
         _state.IsGameOver = false;
         _state.IsPaused = false;

@@ -219,16 +219,16 @@ public partial class MainForm : Form
         switch (e.KeyCode)
         {
             case Keys.Up:
-                HandleDirectionKey(0, -1);
+                HandleDirectionKey(GameConfig.DirectionUp);
                 break;
             case Keys.Down:
-                HandleDirectionKey(0, 1);
+                HandleDirectionKey(GameConfig.DirectionDown);
                 break;
             case Keys.Left:
-                HandleDirectionKey(-1, 0);
+                HandleDirectionKey(GameConfig.DirectionLeft);
                 break;
             case Keys.Right:
-                HandleDirectionKey(1, 0);
+                HandleDirectionKey(GameConfig.DirectionRight);
                 break;
             case Keys.Space:
                 e.Handled = true;
@@ -258,11 +258,11 @@ public partial class MainForm : Form
         }
     }
 
-    private void HandleDirectionKey(int x, int y)
+    private void HandleDirectionKey(Point direction)
     {
         if (!_gameState.IsWaitingToStart && !_gameState.IsGameOver)
         {
-            _gameEngine.TryChangeDirection(new Point(x, y));
+            _gameEngine.TryChangeDirection(direction);
         }
     }
 
