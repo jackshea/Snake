@@ -68,7 +68,9 @@ public class GameEngine
         }
 
         _state.Snake.Clear();
-        for (int i = initialLength - 1; i >= 0; i--)
+        // 蛇头在 First，蛇身向相反方向延伸
+        // 例如：如果方向向右(1,0)，蛇头在(startX, startY)，身体向左延伸
+        for (int i = 0; i < initialLength; i++)
         {
             _state.Snake.AddLast(new Point(startX - i * initialDirection.X, startY - i * initialDirection.Y));
         }
