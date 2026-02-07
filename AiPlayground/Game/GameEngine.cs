@@ -2,6 +2,8 @@ using System;
 using System.Drawing;
 using AiPlayground.Models;
 using AiPlayground.Models.Obstacles;
+using AiPlayground.Services.Abstractions;
+using AiPlayground.Services;
 
 namespace AiPlayground.Game;
 
@@ -10,14 +12,15 @@ namespace AiPlayground.Game;
 /// </summary>
 public class GameEngine
 {
-    private readonly Random _random = new();
+    private readonly IRandomProvider _randomProvider;
     private readonly GameState _state;
     private List<Obstacle> _obstacles = new();
     private long _lastObstacleUpdateTime;
 
-    public GameEngine(GameState state)
+    public GameEngine(GameState state, IRandomProvider? randomProvider = null)
     {
         _state = state;
+        _randomProvider = randomProvider ?? new Services.DefaultRandomProvider();
     }
 
     /// <summary>
@@ -385,8 +388,8 @@ public class GameEngine
             do
             {
                 newFood = new Point(
-                    _random.Next(gridWidth),
-                    _random.Next(gridHeight)
+                    _randomProvider.Next(gridWidth),
+                    _randomProvider.Next(gridHeight)
                 );
             } while (IsOccupied(newFood));
 

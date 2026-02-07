@@ -1,6 +1,5 @@
-using System;
-using System.IO;
-using System.Windows.Forms;
+using System.ComponentModel;
+using AiPlayground.Services.Abstractions;
 
 namespace AiPlayground.Services;
 
@@ -10,11 +9,13 @@ namespace AiPlayground.Services;
 public class HighScoreService
 {
     private readonly string _highScoreFilePath;
+    private readonly IFileSystem _fileSystem;
 
-    public HighScoreService()
+    public HighScoreService(IFileSystem? fileSystem = null)
     {
-        _highScoreFilePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        _fileSystem = fileSystem ?? new PhysicalFileSystem();
+        _highScoreFilePath = _fileSystem.CombinePaths(
+            _fileSystem.GetSpecialFolder(Environment.SpecialFolder.ApplicationData),
             "AiPlayground",
             "snake_highscore.txt"
         );
@@ -27,9 +28,9 @@ public class HighScoreService
     {
         try
         {
-            if (File.Exists(_highScoreFilePath))
+            if (_fileSystem.FileExists(_highScoreFilePath))
             {
-                string scoreText = File.ReadAllText(_highScoreFilePath);
+                string scoreText = _fileSystem.ReadAllText(_highScoreFilePath);
                 if (int.TryParse(scoreText, out int score))
                 {
                     return score;
@@ -50,12 +51,12 @@ public class HighScoreService
     {
         try
         {
-            string directory = Path.GetDirectoryName(_highScoreFilePath)!;
-            if (!Directory.Exists(directory))
+            string? directory = _fileSystem.GetDirectoryName(_highScoreFilePath);
+            if (!string.IsNullOrEmpty(directory) && !_fileSystem.DirectoryExists(directory))
             {
-                Directory.CreateDirectory(directory);
+                _fileSystem.CreateDirectory(directory);
             }
-            File.WriteAllText(_highScoreFilePath, score.ToString());
+            _fileSystem.WriteAllText(_highScoreFilePath, score.ToString());
         }
         catch
         {
