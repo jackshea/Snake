@@ -12,7 +12,7 @@ namespace AiPlayground.Forms;
 public class LevelSelectionForm : Form
 {
     private readonly LevelManager _levelManager;
-    private FlowLayoutPanel _levelsPanel = null!;
+    private TableLayoutPanel _mainPanel = null!;
 
     public string? SelectedLevelId { get; private set; }
 
@@ -21,7 +21,7 @@ public class LevelSelectionForm : Form
         _levelManager = levelManager;
 
         Text = "选择关卡";
-        Size = new Size(800, 600);
+        Size = new Size(850, 600);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -34,70 +34,64 @@ public class LevelSelectionForm : Form
 
     private void CreateControls()
     {
-        // 主面板
-        var mainPanel = new TableLayoutPanel
+        // 主面板 - 使用TableLayoutPanel而不是FlowLayoutPanel
+        _mainPanel = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            RowCount = 2,
+            RowCount = 1,
             ColumnCount = 1,
-            Padding = new Padding(20)
+            Padding = new Padding(20),
+            AutoScroll = true
         };
-        mainPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
-        mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        _mainPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-        // 标题栏
-        var titlePanel = new Panel
-        {
-            Dock = DockStyle.Top,
-            Height = 60
-        };
+        Controls.Add(_mainPanel);
+    }
+
+    private void LoadLevels()
+    {
+        _mainPanel.Controls.Clear();
+        _mainPanel.RowCount = 0;
+        _mainPanel.ColumnStyles.Clear();
+        _mainPanel.RowStyles.Clear();
+
+        // 标题行
+        _mainPanel.RowCount++;
+        _mainPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
 
         var titleLabel = new Label
         {
             Text = "选择关卡",
             Font = new Font("Microsoft YaHei UI", 20, FontStyle.Bold),
             ForeColor = Color.Gold,
-            Dock = DockStyle.Left,
-            AutoSize = true
+            Dock = DockStyle.Fill
         };
+        _mainPanel.Controls.Add(titleLabel, 0, _mainPanel.RowCount - 1);
 
-        var closeButton = CreateButton("关闭", Color.FromArgb(200, 50, 50));
-        closeButton.Click += (s, e) => Close();
-
-        titlePanel.Controls.Add(titleLabel);
-        titlePanel.Controls.Add(closeButton);
-
-        // 关卡列表面板
-        _levelsPanel = new FlowLayoutPanel
+        // 添加关闭按钮
+        var closeButton = new Button
         {
-            Dock = DockStyle.Fill,
-            FlowDirection = FlowDirection.LeftToRight,
-            WrapContents = true,
-            AutoScroll = true,
-            Padding = new Padding(10),
-            BackColor = Color.Transparent
+            Text = "关闭",
+            BackColor = Color.FromArgb(200, 50, 50),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Microsoft YaHei UI", 10),
+            Size = new Size(80, 35),
+            Anchor = AnchorStyles.Top | AnchorStyles.Right
         };
-
-        mainPanel.Controls.Add(titlePanel, 0, 0);
-        mainPanel.Controls.Add(_levelsPanel, 0, 1);
-        Controls.Add(mainPanel);
-    }
-
-    private void LoadLevels()
-    {
-        _levelsPanel.Controls.Clear();
+        closeButton.Click += (s, e) => Close();
+        _mainPanel.Controls.Add(closeButton, 0, _mainPanel.RowCount - 1);
 
         // 加载预设关卡
         var presetLevels = _levelManager.UnlockedPresetLevels;
         if (presetLevels.Count > 0)
         {
-            var header = CreateSectionHeader("预设关卡");
-            _levelsPanel.Controls.Add(header);
+            AddSectionHeader("预设关卡");
 
-            foreach (var level in presetLevels)
+            // 创建关卡行（每行3个关卡）
+            for (int i = 0; i < presetLevels.Count; i += 3)
             {
-                var card = CreateLevelCard(level);
-                _levelsPanel.Controls.Add(card);
+                AddLevelRow(presetLevels, i, Math.Min(i + 3, presetLevels.Count));
             }
         }
 
@@ -105,28 +99,66 @@ public class LevelSelectionForm : Form
         var customLevels = _levelManager.CustomLevels;
         if (customLevels.Count > 0)
         {
-            var header = CreateSectionHeader("自定义关卡");
-            _levelsPanel.Controls.Add(header);
+            AddSectionHeader("自定义关卡");
 
-            foreach (var level in customLevels)
+            for (int i = 0; i < customLevels.Count; i += 3)
             {
-                var card = CreateLevelCard(level);
-                _levelsPanel.Controls.Add(card);
+                AddLevelRow(customLevels, i, Math.Min(i + 3, customLevels.Count));
             }
         }
     }
 
-    private Label CreateSectionHeader(string text)
+    private void AddSectionHeader(string text)
     {
-        return new Label
+        _mainPanel.RowCount++;
+        _mainPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
+
+        var header = new Label
         {
             Text = text,
             Font = new Font("Microsoft YaHei UI", 14, FontStyle.Bold),
             ForeColor = Color.White,
-            AutoSize = true,
-            Margin = new Padding(10, 10, 10, 5),
-            Padding = new Padding(0)
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleLeft
         };
+        _mainPanel.Controls.Add(header, 0, _mainPanel.RowCount - 1);
+    }
+
+    private void AddLevelRow(System.Collections.Generic.IReadOnlyList<Level> levels, int start, int end)
+    {
+        _mainPanel.RowCount++;
+        _mainPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 220));
+
+        // 创建行容器
+        var rowPanel = new Panel
+        {
+            Dock = DockStyle.Fill,
+            Height = 220
+        };
+
+        // 使用TableLayoutPanel布局这一行的关卡
+        var rowLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            RowCount = 1,
+            ColumnCount = end - start,
+            Padding = new Padding(5)
+        };
+
+        for (int i = 0; i < 3; i++)
+        {
+            rowLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+        }
+
+        // 添加关卡卡片
+        for (int i = start; i < end; i++)
+        {
+            var card = CreateLevelCard(levels[i]);
+            rowLayout.Controls.Add(card, i - start, 0);
+        }
+
+        rowPanel.Controls.Add(rowLayout);
+        _mainPanel.Controls.Add(rowPanel, 0, _mainPanel.RowCount - 1);
     }
 
     private Panel CreateLevelCard(Level level)
@@ -136,11 +168,9 @@ public class LevelSelectionForm : Form
 
         var card = new Panel
         {
-            Width = 220,
-            Height = 200,
             BackColor = Color.FromArgb(60, 60, 60),
             BorderStyle = BorderStyle.FixedSingle,
-            Margin = new Padding(10),
+            Margin = new Padding(5),
             Padding = new Padding(10)
         };
 
@@ -154,13 +184,13 @@ public class LevelSelectionForm : Form
         };
 
         // 设置行高
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 20)); // 序号
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 25)); // 名称
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 45)); // 描述
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 20)); // 状态
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 20)); // 最高分
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 10)); // 间距
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40)); // 按钮
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 22)); // 序号
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 28)); // 名称
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50)); // 描述
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 22)); // 状态
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 22)); // 最高分
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 15)); // 间距
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // 按钮
 
         // 关卡序号标签
         var numberLabel = new Label
@@ -237,20 +267,5 @@ public class LevelSelectionForm : Form
 
         card.Controls.Add(layout);
         return card;
-    }
-
-    private Button CreateButton(string text, Color backColor)
-    {
-        return new Button
-        {
-            Text = text,
-            BackColor = backColor,
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat,
-            Font = new Font("Microsoft YaHei UI", 10),
-            Padding = new Padding(10, 5, 10, 5),
-            AutoSize = true,
-            Cursor = Cursors.Hand
-        };
     }
 }
