@@ -349,4 +349,259 @@ public class GameEngineTests
         var obstacles = _engine.GetObstacles();
         obstacles.Should().HaveCount(1);
     }
+
+    [Fact]
+    public void MoveSnake_WhenPaused_ShouldNotMove()
+    {
+        // Arrange
+        _state.Snake.AddLast(new Point(15, 10));
+        _state.Snake.AddLast(new Point(14, 10));
+        _state.Snake.AddLast(new Point(13, 10));
+        _state.Direction = new Point(1, 0);
+        _state.IsWaitingToStart = false;
+        _state.IsPaused = true;
+
+        // Act
+        _engine.MoveSnake();
+
+        // Assert
+        _state.Snake.First!.Value.Should().Be(new Point(16, 10));
+    }
+
+    [Fact]
+    public void MoveSnake_WhenWaitingToStart_ShouldMove()
+    {
+        // Arrange
+        _state.Snake.AddLast(new Point(15, 10));
+        _state.Snake.AddLast(new Point(14, 10));
+        _state.Snake.AddLast(new Point(13, 10));
+        _state.Direction = new Point(1, 0);
+        _state.IsWaitingToStart = true;
+
+        // Act
+        _engine.MoveSnake();
+
+        // Assert
+        _state.Snake.First!.Value.Should().Be(new Point(16, 10));
+    }
+
+    [Fact]
+    public void TryChangeDirection_WhenWaitingToStart_ShouldNotChange()
+    {
+        // Arrange
+        _state.Direction = new Point(1, 0);
+        _state.IsWaitingToStart = true;
+
+        // Act
+        var result = _engine.TryChangeDirection(new Point(0, -1));
+
+        // Assert
+        result.Should().BeFalse();
+        _state.Direction.Should().Be(new Point(1, 0));
+    }
+
+    [Fact]
+    public void Initialize_WithDefaultSettings_ShouldCreateCorrectSnakeLength()
+    {
+        // Act
+        _engine.Initialize();
+
+        // Assert
+        _state.Snake.Count.Should().Be(3);
+    }
+
+    [Fact]
+    public void Initialize_ShouldSpawnFood()
+    {
+        // Act
+        _engine.Initialize();
+
+        // Assert
+        _state.Foods.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void GetTimerInterval_WithMinSpeed_ShouldReturnLargestInterval()
+    {
+        // Arrange
+        _state.Difficulty = Difficulty.Medium;
+        _state.SpeedLevel = GameConfig.MinSpeed;
+
+        // Act
+        var interval = _engine.GetTimerInterval();
+
+        // Assert
+        interval.Should().Be(GameConfig.NormalBaseInterval);
+    }
+
+    [Fact]
+    public void GetTimerInterval_WithMaxSpeed_ShouldReturnSmallestInterval()
+    {
+        // Arrange
+        _state.Difficulty = Difficulty.Medium;
+        _state.SpeedLevel = GameConfig.MaxSpeed;
+
+        // Act
+        var interval = _engine.GetTimerInterval();
+
+        // Assert
+        var expectedInterval = Math.Max(
+            GameConfig.MinInterval,
+            GameConfig.NormalBaseInterval - (GameConfig.MaxSpeed - GameConfig.MinSpeed) * GameConfig.SpeedIntervalReduction
+        );
+        interval.Should().Be(expectedInterval);
+    }
+
+    [Fact]
+    public void MoveSnake_WithEasyDifficulty_ShouldScoreCorrectPoints()
+    {
+        // Arrange
+        _state.Snake.Clear(); // 确保蛇为空
+        _state.Foods.Clear(); // 确保食物为空
+        _state.Snake.AddLast(new Point(15, 10));
+        _state.Snake.AddLast(new Point(14, 10));
+        _state.Snake.AddLast(new Point(13, 10));
+        _state.Direction = new Point(1, 0);
+        _state.Foods.Add(new Point(16, 10));
+        _state.IsWaitingToStart = false;
+        _state.Difficulty = Difficulty.Easy;
+        _state.SpeedLevel = 5;
+        var initialScore = _state.Score;
+
+        // Act
+        _engine.MoveSnake();
+
+        // Assert
+        var expectedPoints = GameConfig.EasyBasePoints + _state.SpeedLevel;
+        _state.Score.Should().Be(initialScore + expectedPoints);
+    }
+
+    [Fact]
+    public void MoveSnake_WithMediumDifficulty_ShouldScoreCorrectPoints()
+    {
+        // Arrange
+        _state.Snake.Clear(); // 确保蛇为空
+        _state.Foods.Clear(); // 确保食物为空
+        _state.Snake.AddLast(new Point(15, 10));
+        _state.Snake.AddLast(new Point(14, 10));
+        _state.Snake.AddLast(new Point(13, 10));
+        _state.Direction = new Point(1, 0);
+        _state.Foods.Add(new Point(16, 10));
+        _state.IsWaitingToStart = false;
+        _state.Difficulty = Difficulty.Medium;
+        _state.SpeedLevel = 5;
+        var initialScore = _state.Score;
+
+        // Act
+        _engine.MoveSnake();
+
+        // Assert
+        var expectedPoints = GameConfig.MediumBasePoints + _state.SpeedLevel;
+        _state.Score.Should().Be(initialScore + expectedPoints);
+    }
+
+    [Fact]
+    public void MoveSnake_WithHardDifficulty_ShouldScoreCorrectPoints()
+    {
+        // Arrange
+        _state.Snake.Clear(); // 确保蛇为空
+        _state.Foods.Clear(); // 确保食物为空
+        _state.Snake.AddLast(new Point(15, 10));
+        _state.Snake.AddLast(new Point(14, 10));
+        _state.Snake.AddLast(new Point(13, 10));
+        _state.Direction = new Point(1, 0);
+        _state.Foods.Add(new Point(16, 10));
+        _state.IsWaitingToStart = false;
+        _state.Difficulty = Difficulty.Hard;
+        _state.SpeedLevel = 5;
+        var initialScore = _state.Score;
+
+        // Act
+        _engine.MoveSnake();
+
+        // Assert
+        var expectedPoints = GameConfig.HardBasePoints + _state.SpeedLevel;
+        _state.Score.Should().Be(initialScore + expectedPoints);
+    }
+
+    [Fact]
+    public void MoveSnake_WhenHittingLeftWall_ShouldEndGame()
+    {
+        // Arrange
+        _state.Snake.AddLast(new Point(0, 10));
+        _state.Snake.AddLast(new Point(1, 10));
+        _state.Snake.AddLast(new Point(2, 10));
+        _state.Direction = new Point(-1, 0);
+        _state.IsWaitingToStart = false;
+
+        // Act
+        _engine.MoveSnake();
+
+        // Assert
+        _state.IsGameOver.Should().BeTrue();
+    }
+
+    [Fact]
+    public void MoveSnake_WhenHittingTopWall_ShouldEndGame()
+    {
+        // Arrange
+        _state.Snake.AddLast(new Point(10, 0));
+        _state.Snake.AddLast(new Point(10, 1));
+        _state.Snake.AddLast(new Point(10, 2));
+        _state.Direction = new Point(0, -1);
+        _state.IsWaitingToStart = false;
+
+        // Act
+        _engine.MoveSnake();
+
+        // Assert
+        _state.IsGameOver.Should().BeTrue();
+    }
+
+    [Fact]
+    public void UpdateLevelTime_WhenNotWaitingAndNotPaused_ShouldIncrement()
+    {
+        // Arrange
+        var level = new LevelBuilder().Build();
+        _state.CurrentLevel = level;
+        _state.IsWaitingToStart = false;
+        _state.IsPaused = false;
+
+        // Act
+        _engine.UpdateLevelTime();
+
+        // Assert
+        _state.LevelTime.Should().Be(1);
+    }
+
+    [Fact]
+    public void UpdateLevelTime_WhenGameOver_ShouldNotIncrement()
+    {
+        // Arrange
+        var level = new LevelBuilder().Build();
+        _state.CurrentLevel = level;
+        _state.IsWaitingToStart = false;
+        _state.IsGameOver = true;
+
+        // Act
+        _engine.UpdateLevelTime();
+
+        // Assert
+        _state.LevelTime.Should().Be(0);
+    }
+
+    [Fact]
+    public void UpdateLevelTime_WithoutLevel_ShouldNotThrow()
+    {
+        // Arrange
+        _state.CurrentLevel = null;
+        _state.IsWaitingToStart = false;
+
+        // Act
+        Action action = () => _engine.UpdateLevelTime();
+
+        // Assert
+        action.Should().NotThrow();
+        _state.LevelTime.Should().Be(0);
+    }
 }

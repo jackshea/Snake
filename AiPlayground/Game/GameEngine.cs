@@ -385,12 +385,23 @@ public class GameEngine
         while (_state.Foods.Count < foodCount)
         {
             Point newFood;
+            int attempts = 0;
+            const int maxAttempts = 100; // 限制尝试次数以避免无限循环
+            
             do
             {
                 newFood = new Point(
                     _randomProvider.Next(gridWidth),
                     _randomProvider.Next(gridHeight)
                 );
+                attempts++;
+                
+                // 如果尝试次数过多，说明网格太拥挤，无法找到合适位置
+                if (attempts >= maxAttempts)
+                {
+                    // 在这种情况下，我们不再继续尝试生成食物
+                    return;
+                }
             } while (IsOccupied(newFood));
 
             _state.Foods.Add(newFood);

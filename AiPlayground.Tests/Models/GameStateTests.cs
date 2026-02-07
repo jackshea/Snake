@@ -333,4 +333,239 @@ public class GameStateTests
         // Assert
         cloned.CurrentLevel.Should().BeSameAs(level);
     }
+
+    [Fact]
+    public void IsNewHighScore_CanBeModified()
+    {
+        // Arrange
+        var state = new GameState();
+
+        // Act
+        state.IsNewHighScore = true;
+
+        // Assert
+        state.IsNewHighScore.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Foods_Clear_ShouldEmptyList()
+    {
+        // Arrange
+        var state = new GameState();
+        state.Foods.Add(new Point(10, 10));
+        state.Foods.Add(new Point(15, 15));
+
+        // Act
+        state.Foods.Clear();
+
+        // Assert
+        state.Foods.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Foods_RemoveAt_ShouldRemoveItem()
+    {
+        // Arrange
+        var state = new GameState();
+        state.Foods.Add(new Point(10, 10));
+        state.Foods.Add(new Point(15, 15));
+        state.Foods.Add(new Point(20, 20));
+
+        // Act
+        state.Foods.RemoveAt(1);
+
+        // Assert
+        state.Foods.Should().HaveCount(2);
+        state.Foods.Should().NotContain(new Point(15, 15));
+    }
+
+    [Fact]
+    public void Foods_Indexer_CanSetItem()
+    {
+        // Arrange
+        var state = new GameState();
+        state.Foods.Add(new Point(10, 10));
+        state.Foods.Add(new Point(15, 15));
+
+        // Act
+        state.Foods[0] = new Point(5, 5);
+
+        // Assert
+        state.Foods[0].Should().Be(new Point(5, 5));
+    }
+
+    [Fact]
+    public void Snake_Clear_ShouldEmptyList()
+    {
+        // Arrange
+        var state = new GameState();
+        state.Snake.AddLast(new Point(10, 10));
+        state.Snake.AddLast(new Point(15, 15));
+
+        // Act
+        state.Snake.Clear();
+
+        // Assert
+        state.Snake.Count.Should().Be(0);
+        state.Snake.First.Should().BeNull();
+        state.Snake.Last.Should().BeNull();
+    }
+
+    [Fact]
+    public void Snake_RemoveFirst_ShouldRemoveHead()
+    {
+        // Arrange
+        var state = new GameState();
+        state.Snake.AddLast(new Point(10, 10));
+        state.Snake.AddLast(new Point(15, 15));
+        state.Snake.AddLast(new Point(20, 20));
+
+        // Act
+        state.Snake.RemoveFirst();
+
+        // Assert
+        state.Snake.Count.Should().Be(2);
+        state.Snake.First!.Value.Should().Be(new Point(15, 15));
+    }
+
+    [Fact]
+    public void Snake_RemoveFirst_OnEmptyList_ShouldReturnFalse()
+    {
+        // Arrange
+        var state = new GameState();
+
+        // Act
+        var result = state.Snake.RemoveFirst();
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Snake_AddBefore_ShouldInsertNode()
+    {
+        // Arrange
+        var state = new GameState();
+        var first = state.Snake.AddLast(new Point(10, 10));
+        var last = state.Snake.AddLast(new Point(20, 20));
+
+        // Act
+        var newNode = state.Snake.AddBefore(last, new Point(15, 15));
+
+        // Assert
+        state.Snake.Count.Should().Be(3);
+        first.Next.Should().Be(newNode);
+        newNode.Next.Should().Be(last);
+    }
+
+    [Fact]
+    public void Snake_AddAfter_ShouldInsertNode()
+    {
+        // Arrange
+        var state = new GameState();
+        var first = state.Snake.AddLast(new Point(10, 10));
+        var last = state.Snake.AddLast(new Point(20, 20));
+
+        // Act
+        var newNode = state.Snake.AddAfter(first, new Point(15, 15));
+
+        // Assert
+        state.Snake.Count.Should().Be(3);
+        first.Next.Should().Be(newNode);
+        newNode.Next.Should().Be(last);
+    }
+
+    [Fact]
+    public void Snake_Contains_ShouldReturnTrueWhenExists()
+    {
+        // Arrange
+        var state = new GameState();
+        state.Snake.AddLast(new Point(10, 10));
+        state.Snake.AddLast(new Point(15, 15));
+
+        // Act
+        var result = state.Snake.Contains(new Point(15, 15));
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Snake_Contains_ShouldReturnFalseWhenNotExists()
+    {
+        // Arrange
+        var state = new GameState();
+        state.Snake.AddLast(new Point(10, 10));
+
+        // Act
+        var result = state.Snake.Contains(new Point(15, 15));
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Snake_Find_ShouldReturnCorrectNode()
+    {
+        // Arrange
+        var state = new GameState();
+        state.Snake.AddLast(new Point(10, 10));
+        var expectedNode = state.Snake.AddLast(new Point(15, 15));
+        state.Snake.AddLast(new Point(20, 20));
+
+        // Act
+        var foundNode = state.Snake.Find(new Point(15, 15));
+
+        // Assert
+        foundNode.Should().Be(expectedNode);
+    }
+
+    [Fact]
+    public void Snake_FindLast_ShouldReturnLastOccurrence()
+    {
+        // Arrange
+        var state = new GameState();
+        state.Snake.AddLast(new Point(10, 10));
+        state.Snake.AddLast(new Point(15, 15));
+        var lastNode = state.Snake.AddLast(new Point(10, 10));
+
+        // Act
+        var foundNode = state.Snake.FindLast(new Point(10, 10));
+
+        // Assert
+        foundNode.Should().Be(lastNode);
+    }
+
+    [Fact]
+    public void Snake_RemoveByValue_ShouldReturnTrueWhenRemoved()
+    {
+        // Arrange
+        var state = new GameState();
+        state.Snake.AddLast(new Point(10, 10));
+        state.Snake.AddLast(new Point(15, 15));
+        state.Snake.AddLast(new Point(20, 20));
+
+        // Act
+        var result = state.Snake.Remove(new Point(15, 15));
+
+        // Assert
+        result.Should().BeTrue();
+        state.Snake.Count.Should().Be(2);
+        state.Snake.Contains(new Point(15, 15)).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Snake_RemoveByValue_ShouldReturnFalseWhenNotFound()
+    {
+        // Arrange
+        var state = new GameState();
+        state.Snake.AddLast(new Point(10, 10));
+
+        // Act
+        var result = state.Snake.Remove(new Point(15, 15));
+
+        // Assert
+        result.Should().BeFalse();
+        state.Snake.Count.Should().Be(1);
+    }
 }
