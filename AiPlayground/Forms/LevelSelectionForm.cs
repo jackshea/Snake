@@ -21,9 +21,9 @@ public class LevelSelectionForm : Form
         _levelManager = levelManager;
 
         Text = "选择关卡";
-        Size = new Size(780, 500);
+        Size = new Size(750, 480);
         StartPosition = FormStartPosition.CenterScreen;
-        FormBorderStyle = FormBorderStyle.FixedDialog;
+        FormBorderStyle = FormBorderStyle.Sizable;
         MaximizeBox = false;
         MinimizeBox = false;
         BackColor = Color.FromArgb(45, 45, 45);
@@ -34,41 +34,6 @@ public class LevelSelectionForm : Form
 
     private void CreateControls()
     {
-        // 顶部标题栏 - 使用Panel
-        var headerPanel = new Panel
-        {
-            Dock = DockStyle.Top,
-            Height = 40,
-            Padding = new Padding(10, 5, 10, 5),
-            BackColor = Color.FromArgb(35, 35, 35)
-        };
-
-        var titleLabel = new Label
-        {
-            Text = "选择关卡",
-            Font = new Font("Microsoft YaHei UI", 16, FontStyle.Bold),
-            ForeColor = Color.Gold,
-            Location = new Point(10, 8),
-            AutoSize = true
-        };
-
-        var closeButton = new Button
-        {
-            Text = "×",
-            BackColor = Color.FromArgb(200, 50, 50),
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat,
-            Font = new Font("Microsoft YaHei UI", 14, FontStyle.Bold),
-            Size = new Size(35, 25),
-            UseVisualStyleBackColor = false,
-            Cursor = Cursors.Hand
-        };
-        closeButton.Click += (s, e) => Close();
-
-        headerPanel.Controls.Add(titleLabel);
-        headerPanel.Controls.Add(closeButton);
-        closeButton.Location = new Point(headerPanel.ClientSize.Width - closeButton.Width - 5, 7);
-
         // 主面板
         _mainPanel = new TableLayoutPanel
         {
@@ -81,7 +46,6 @@ public class LevelSelectionForm : Form
         _mainPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         Controls.Add(_mainPanel);
-        Controls.Add(headerPanel);
     }
 
     private void LoadLevels()
@@ -97,11 +61,23 @@ public class LevelSelectionForm : Form
         {
             AddSectionHeader("预设关卡");
 
-            // 创建关卡行（每行4个关卡）
-            for (int i = 0; i < presetLevels.Count; i += 4)
+            var flowPanel = new FlowLayoutPanel
             {
-                AddLevelRow(presetLevels, i, Math.Min(i + 4, presetLevels.Count));
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = true,
+                AutoScroll = false,
+                Padding = new Padding(0)
+            };
+
+            foreach (var level in presetLevels)
+            {
+                flowPanel.Controls.Add(CreateLevelCard(level));
             }
+
+            _mainPanel.RowCount++;
+            _mainPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            _mainPanel.Controls.Add(flowPanel, 0, _mainPanel.RowCount - 1);
         }
 
         // 加载自定义关卡
@@ -110,10 +86,23 @@ public class LevelSelectionForm : Form
         {
             AddSectionHeader("自定义关卡");
 
-            for (int i = 0; i < customLevels.Count; i += 4)
+            var flowPanel = new FlowLayoutPanel
             {
-                AddLevelRow(customLevels, i, Math.Min(i + 4, customLevels.Count));
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = true,
+                AutoScroll = false,
+                Padding = new Padding(0)
+            };
+
+            foreach (var level in customLevels)
+            {
+                flowPanel.Controls.Add(CreateLevelCard(level));
             }
+
+            _mainPanel.RowCount++;
+            _mainPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            _mainPanel.Controls.Add(flowPanel, 0, _mainPanel.RowCount - 1);
         }
     }
 
@@ -134,139 +123,77 @@ public class LevelSelectionForm : Form
         _mainPanel.Controls.Add(header, 0, _mainPanel.RowCount - 1);
     }
 
-    private void AddLevelRow(System.Collections.Generic.IReadOnlyList<Level> levels, int start, int end)
-    {
-        _mainPanel.RowCount++;
-        _mainPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 155));
-
-        // 使用TableLayoutPanel直接布局这一行的关卡
-        var rowLayout = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            RowCount = 1,
-            ColumnCount = end - start,
-            Padding = new Padding(3)
-        };
-
-        for (int i = 0; i < end - start; i++)
-        {
-            rowLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-        }
-
-        // 添加关卡卡片
-        for (int i = start; i < end; i++)
-        {
-            var card = CreateLevelCard(levels[i]);
-            rowLayout.Controls.Add(card, i - start, 0);
-        }
-
-        _mainPanel.Controls.Add(rowLayout, 0, _mainPanel.RowCount - 1);
-    }
-
-    private Panel CreateLevelCard(Level level)
+    private Control CreateLevelCard(Level level)
     {
         var completion = _levelManager.GetLevelCompletion(level.Id);
         bool isCompleted = completion?.IsCompleted ?? false;
 
-        var card = new Panel
+        // 卡片主容器 - 使用Button作为整个卡片
+        var cardButton = new Button
         {
             BackColor = Color.FromArgb(60, 60, 60),
-            BorderStyle = BorderStyle.FixedSingle,
-            Margin = new Padding(3),
-            Padding = new Padding(6)
-        };
-
-        // 使用TableLayoutPanel来布局卡片内容
-        var layout = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            RowCount = 6,
-            ColumnCount = 1,
-            Padding = new Padding(0)
-        };
-
-        // 设置行高
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 18)); // 序号
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 22)); // 名称
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 35)); // 描述
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 18)); // 状态
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 18)); // 最高分
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // 按钮
-
-        // 关卡序号标签
-        var numberLabel = new Label
-        {
-            Text = level.IsCustom ? "自定义" : $"关卡 {level.LevelNumber}",
-            Font = new Font("Microsoft YaHei UI", 8),
-            ForeColor = Color.Gray,
-            Dock = DockStyle.Fill
-        };
-
-        // 关卡名称
-        var nameLabel = new Label
-        {
-            Text = level.Name,
-            Font = new Font("Microsoft YaHei UI", 10, FontStyle.Bold),
-            ForeColor = Color.White,
-            Dock = DockStyle.Fill
-        };
-
-        // 关卡描述
-        var descLabel = new Label
-        {
-            Text = level.Description,
-            Font = new Font("Microsoft YaHei UI", 7),
-            ForeColor = Color.LightGray,
-            Dock = DockStyle.Fill
-        };
-
-        // 完成状态
-        var statusLabel = new Label
-        {
-            Text = isCompleted ? "✓ 已完成" : "未完成",
-            Font = new Font("Microsoft YaHei UI", 8, FontStyle.Bold),
-            ForeColor = isCompleted ? Color.Lime : Color.Orange,
-            Dock = DockStyle.Fill
-        };
-
-        // 最高分
-        var bestScoreLabel = new Label
-        {
-            Text = completion != null && completion.IsCompleted
-                ? $"最高分: {completion.BestScore}"
-                : "尚未完成",
-            Font = new Font("Microsoft YaHei UI", 7),
-            ForeColor = Color.Cyan,
-            Dock = DockStyle.Fill
-        };
-
-        // 开始按钮
-        var startButton = new Button
-        {
-            Text = "开始",
-            BackColor = Color.FromArgb(50, 150, 50),
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat,
-            Font = new Font("Microsoft YaHei UI", 9),
-            Dock = DockStyle.Fill,
-            Margin = new Padding(0),
-            Cursor = Cursors.Hand
+            FlatAppearance = { BorderSize = 1 },
+            Size = new Size(170, 130),
+            Margin = new Padding(4),
+            Padding = new Padding(6),
+            Cursor = Cursors.Hand,
+            TextAlign = ContentAlignment.TopLeft,
+            UseVisualStyleBackColor = false
         };
-        startButton.Click += (s, e) =>
+        cardButton.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
+
+        // 在按钮上绘制内容
+        cardButton.Paint += (s, e) =>
+        {
+            var g = e.Graphics;
+            var fontNumber = new Font("Microsoft YaHei UI", 8);
+            var fontName = new Font("Microsoft YaHei UI", 10, FontStyle.Bold);
+            var fontDesc = new Font("Microsoft YaHei UI", 7);
+            var fontStatus = new Font("Microsoft YaHei UI", 8, FontStyle.Bold);
+            var fontScore = new Font("Microsoft YaHei UI", 7);
+
+            var y = 6;
+            // 序号
+            g.DrawString(level.IsCustom ? "自定义" : $"关卡 {level.LevelNumber}",
+                fontNumber, Brushes.Gray, 6, y);
+            y += 18;
+
+            // 名称
+            g.DrawString(level.Name, fontName, Brushes.White, 6, y);
+            y += 22;
+
+            // 描述
+            var descFormat = new StringFormat
+            {
+                Trimming = StringTrimming.EllipsisWord,
+                FormatFlags = StringFormatFlags.LineLimit
+            };
+            g.DrawString(level.Description, fontDesc, Brushes.LightGray,
+                new RectangleF(6, y, 158, 30), descFormat);
+            y += 32;
+
+            // 状态
+            var statusText = isCompleted ? "✓ 已完成" : "未完成";
+            var statusColor = isCompleted ? Brushes.Lime : Brushes.Orange;
+            g.DrawString(statusText, fontStatus, statusColor, 6, y);
+            y += 18;
+
+            // 最高分
+            var scoreText = completion != null && completion.IsCompleted
+                ? $"最高分: {completion.BestScore}"
+                : "尚未完成";
+            g.DrawString(scoreText, fontScore, Brushes.Cyan, 6, y);
+        };
+
+        cardButton.Click += (s, e) =>
         {
             SelectedLevelId = level.Id;
             DialogResult = DialogResult.OK;
             Close();
         };
 
-        layout.Controls.Add(numberLabel, 0, 0);
-        layout.Controls.Add(nameLabel, 0, 1);
-        layout.Controls.Add(descLabel, 0, 2);
-        layout.Controls.Add(statusLabel, 0, 3);
-        layout.Controls.Add(bestScoreLabel, 0, 4);
-        layout.Controls.Add(startButton, 0, 5);
-
-        card.Controls.Add(layout);
-        return card;
+        return cardButton;
     }
 }
