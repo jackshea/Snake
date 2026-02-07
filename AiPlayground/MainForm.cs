@@ -264,7 +264,13 @@ public partial class MainForm : Form
         {
             if (_levelManager.CheckVictoryCondition(_gameState))
             {
+                // 立即停止游戏，防止重复触发
+                _gameTimer.Stop();
+                _levelTimeTimer.Stop();
+                _gameState.IsLevelCompleted = true;
+
                 OnLevelCompleted(_gameState.CurrentLevel);
+                return; // 退出游戏循环
             }
         }
 
