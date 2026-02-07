@@ -17,6 +17,7 @@ namespace AiPlayground.Models
         public VictoryCondition VictoryCondition { get; set; } = new();
         public List<Obstacle> Obstacles { get; set; } = new();
         public LevelSettings Settings { get; set; } = new();
+        public List<Point> FixedFoodPositions { get; set; } = new();
 
         [JsonIgnore]
         public int GridWidth => Settings.GridWidth;

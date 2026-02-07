@@ -55,8 +55,8 @@ public partial class MainForm : Form
         _gameTimer = new System.Windows.Forms.Timer();
         _levelTimeTimer = new System.Windows.Forms.Timer { Interval = 1000 }; // 每秒更新关卡时间
 
-        // 订阅关卡完成事件
-        _levelManager.LevelCompleted += OnLevelCompleted;
+        // 注意：不订阅 LevelCompleted 事件，因为我们在 OnGameTick 中手动调用 OnLevelCompleted
+        // 如果订阅，会在 CompleteLevelAsync 中触发事件，导致重复调用
 
         // 加载最高分
         _highScore = _highScoreService.LoadHighScore();

@@ -7,10 +7,10 @@
   "isCustom": false,
   "victoryCondition": {
     "type": 0,
-    "targetScore": 100,
+    "targetScore": 10,
     "targetLength": 10,
     "mustCollectAllFood": false,
-    "foodSpawnCount": null
+    "foodSpawnCount": 1
   },
   "obstacles": [],
   "settings": {
@@ -18,10 +18,13 @@
     "initialSpeedLevel": 3,
     "gridWidth": 30,
     "gridHeight": 20,
-    "snakeStartPosition": { "x": 5, "y": 5 },
+    "snakeStartPosition": { "x": 5, "y": 10 },
     "initialDirection": { "x": 1, "y": 0 },
     "initialSnakeLength": 3,
-    "foodCount": 1,
+    "foodCount": 0,
     "enableDynamicObstacles": false
-  }
+  },
+  "fixedFoodPositions": [
+    { "x": 6, "y": 10 }
+  ]
 }

@@ -314,6 +314,24 @@ public class GameEngine
             foodCount = Math.Min(foodCount, maxFood - _state.TotalFoodSpawned);
         }
 
+        // 如果有固定食物位置，使用固定位置
+        if (_state.CurrentLevel?.FixedFoodPositions != null && _state.CurrentLevel.FixedFoodPositions.Count > 0)
+        {
+            foreach (var foodPos in _state.CurrentLevel.FixedFoodPositions)
+            {
+                if (_state.TotalFoodSpawned >= foodCount)
+                    break;
+
+                if (!_state.Foods.Contains(foodPos))
+                {
+                    _state.Foods.Add(foodPos);
+                    _state.TotalFoodSpawned++;
+                }
+            }
+            return;
+        }
+
+        // 否则随机生成食物
         while (_state.Foods.Count < foodCount)
         {
             Point newFood;
