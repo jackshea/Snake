@@ -11,4 +11,8 @@ public class DefaultTimeProvider : ITimeProvider
         DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
     public DateTime Now => DateTime.Now;
+
+    public DateTime GetCurrentDateTime() => DateTime.UtcNow;
+
+    public DateTimeOffset GetCurrentDateTimeOffset() => DateTimeOffset.UtcNow;
 }

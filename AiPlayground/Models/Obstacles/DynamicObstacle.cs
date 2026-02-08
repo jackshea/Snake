@@ -1,4 +1,5 @@
 using AiPlayground.Game;
+using AiPlayground.Services.Abstractions;
 
 namespace AiPlayground.Models.Obstacles
 {
@@ -7,6 +8,7 @@ namespace AiPlayground.Models.Obstacles
     /// </summary>
     public class DynamicObstacle : Obstacle
     {
+        private readonly ITimeProvider _timeProvider;
         private List<Point> _path;
         private int _currentPathIndex;
         private long _lastMoveTime;
@@ -20,12 +22,14 @@ namespace AiPlayground.Models.Obstacles
         public int MoveIntervalMs { get; set; } = 500; // 移动间隔（毫秒）
         public bool LoopPath { get; set; } = true;
 
-        public DynamicObstacle(Point position, List<Point>? path = null) : base(position, ObstacleType.Dynamic)
+        public DynamicObstacle(Point position, List<Point>? path = null, ITimeProvider? timeProvider = null)
+            : base(position, ObstacleType.Dynamic)
         {
+            _timeProvider = timeProvider ?? new Services.DefaultTimeProvider();
             Position = position;
             _path = path ?? new List<Point> { position };
             _currentPathIndex = 0;
-            _lastMoveTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _lastMoveTime = _timeProvider.GetCurrentUnixTimeMilliseconds();
         }
 
         public override ObstacleInteractionResult Interact(GameState state)
@@ -35,7 +39,7 @@ namespace AiPlayground.Models.Obstacles
 
         public override void Update(int gridWidth, int gridHeight)
         {
-            long currentTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            long currentTime = _timeProvider.GetCurrentUnixTimeMilliseconds();
 
             if (currentTime - _lastMoveTime < MoveIntervalMs)
             {

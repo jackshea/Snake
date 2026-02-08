@@ -70,6 +70,24 @@ public class LevelBuilder
         return this;
     }
 
+    public LevelBuilder WithSpeedUpObstacle(int x, int y, int amount = 2)
+    {
+        _level.Obstacles.Add(SpecialEffectObstacle.CreateSpeedUp(new Point(x, y), amount));
+        return this;
+    }
+
+    public LevelBuilder WithSpeedDownObstacle(int x, int y, int amount = -2)
+    {
+        _level.Obstacles.Add(SpecialEffectObstacle.CreateSpeedDown(new Point(x, y), amount));
+        return this;
+    }
+
+    public LevelBuilder WithTeleportObstacle(int x, int y, Point destination)
+    {
+        _level.Obstacles.Add(SpecialEffectObstacle.CreateTeleport(new Point(x, y), destination));
+        return this;
+    }
+
     public LevelBuilder WithVictoryCondition(VictoryConditionType type, int target = 0)
     {
         _level.VictoryCondition.Type = type;

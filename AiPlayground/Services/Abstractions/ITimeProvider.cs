@@ -14,4 +14,14 @@ public interface ITimeProvider
     /// 获取当前时间
     /// </summary>
     DateTime Now { get; }
+
+    /// <summary>
+    /// 获取当前时间的 DateTime 对象
+    /// </summary>
+    DateTime GetCurrentDateTime();
+
+    /// <summary>
+    /// 获取当前时间的 DateTimeOffset 对象
+    /// </summary>
+    DateTimeOffset GetCurrentDateTimeOffset();
 }
