@@ -57,16 +57,14 @@ public class LevelSelectionForm : Form
 
         // 加载预设关卡
         var presetLevels = _levelManager.UnlockedPresetLevels;
+
+        // 调试：显示实际加载的关卡数量
+        var levelNumbers = string.Join(", ", presetLevels.Select(l => l.LevelNumber));
+        MessageBox.Show($"已加载 {presetLevels.Count} 个预设关卡: {levelNumbers}", "调试信息");
+
         if (presetLevels.Count > 0)
         {
             AddSectionHeader("预设关卡");
-
-            // 调试信息
-            System.Diagnostics.Debug.WriteLine($"关卡选择界面: 已加载 {presetLevels.Count} 个预设关卡");
-            foreach (var level in presetLevels)
-            {
-                System.Diagnostics.Debug.WriteLine($"  - 关卡 {level.LevelNumber}: {level.Name}");
-            }
 
             var flowPanel = new FlowLayoutPanel
             {

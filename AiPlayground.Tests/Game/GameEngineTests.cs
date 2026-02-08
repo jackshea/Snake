@@ -825,4 +825,27 @@ public class GameEngineTests
         allLevels.Count.Should().Be(5, "应该有5个预设关卡");
         unlockedLevels.Count.Should().BeGreaterOrEqualTo(3, "至少应该有3个已解锁关卡（关卡1-3）");
     }
+
+    [Fact]
+    public void Debug_Level4_ShouldBeInLoadedLevels()
+    {
+        // Arrange
+        var storageService = new LevelStorageService();
+
+        // Act - 直接调用 LoadPresetLevels
+        var levels = storageService.LoadPresetLevels();
+
+        // Assert - 打印每个关卡的信息
+        Console.WriteLine($"总共加载了 {levels.Count} 个关卡:");
+        foreach (var level in levels)
+        {
+            Console.WriteLine($"  关卡 {level.LevelNumber}: {level.Name} (ID: {level.Id})");
+        }
+
+        // 检查关卡4是否存在
+        var level4 = levels.FirstOrDefault(l => l.LevelNumber == 4);
+        level4.Should().NotBeNull("关卡4必须被加载");
+        level4!.LevelNumber.Should().Be(4);
+        level4.Name.Should().Be("可破防线");
+    }
 }
