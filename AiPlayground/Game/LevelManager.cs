@@ -89,7 +89,13 @@ public class LevelManager
     public Level? GetLevelByNumber(int levelNumber)
     {
         LoadPresetLevels();
-        return _presetLevels.FirstOrDefault(l => l.LevelNumber == levelNumber);
+        var level = _presetLevels.FirstOrDefault(l => l.LevelNumber == levelNumber);
+        if (level != null)
+        {
+            // 更新解锁状态
+            level.IsUnlocked = _progression.IsLevelUnlocked(levelNumber);
+        }
+        return level;
     }
 
     /// <summary>
