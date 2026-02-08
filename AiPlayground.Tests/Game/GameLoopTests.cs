@@ -123,7 +123,10 @@ public class GameLoopTests
         // Assert
         state.Snake.Count.Should().Be(initialLength + 1);
         state.Score.Should().BeGreaterThan(initialScore);
-        state.Foods.Should().BeEmpty();
+        // 吃到食物后会生成新食物，所以不为空
+        state.Foods.Should().NotBeEmpty();
+        // 原来的食物位置 (16, 10) 应该不在食物列表中
+        state.Foods.Should().NotContain(new Point(16, 10));
     }
 
     [Fact]

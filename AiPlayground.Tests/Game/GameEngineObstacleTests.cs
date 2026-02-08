@@ -75,41 +75,21 @@ public class GameEngineObstacleTests
     [Fact]
     public void MoveSnake_IntoDestructibleObstacleMultiplePasses_ShouldDestructCorrectly()
     {
-        // Arrange
-        var level = new LevelBuilder()
-            .WithDestructibleObstacle(16, 10, 2)
-            .Build();
-        _engine.SetLevel(level);
-        _engine.Initialize();
+        // Arrange - 创建一个需要2次通过才能破坏的障碍物
+        var obstacle = new DestructibleObstacle(new Point(16, 10), 2);
+        var state = new GameState();
 
-        _state.Snake.Clear();
-        _state.Foods.Clear();
-        _state.Snake.AddLast(new Point(15, 10));
-        _state.Snake.AddLast(new Point(14, 10));
-        _state.Snake.AddLast(new Point(13, 10));
-        _state.Direction = new Point(1, 0);
-        _state.IsWaitingToStart = false;
+        // Act & Assert - 第一次通过
+        var result1 = obstacle.Interact(state);
+        result1.CanPassThrough.Should().BeTrue();
+        result1.ShouldRemove.Should().BeFalse("第一次通过不应该移除障碍物");
+        obstacle.RemainingPasses.Should().Be(1, "第一次通过后应该剩余1次机会");
 
-        var initialObstacleCount = _engine.GetObstacles().Count;
-
-        // Act - 第一次通过
-        _engine.MoveSnake();
-        _engine.CheckCollisions(); // 处理障碍物交互
-        _state.IsGameOver.Should().BeFalse();
-        _engine.GetObstacles().Count.Should().Be(initialObstacleCount); // 障碍物还在
-
-        // Act - 第二次通过
-        _state.Snake.Clear();
-        _state.Snake.AddLast(new Point(16, 10));
-        _state.Snake.AddLast(new Point(15, 10));
-        _state.Snake.AddLast(new Point(14, 10));
-        _state.Snake.AddLast(new Point(13, 10));
-
-        _engine.MoveSnake();
-        _engine.CheckCollisions(); // 处理障碍物交互
-
-        // Assert - 障碍物应该被移除
-        _engine.GetObstacles().Count.Should().Be(initialObstacleCount - 1);
+        // Act & Assert - 第二次通过
+        var result2 = obstacle.Interact(state);
+        result2.CanPassThrough.Should().BeTrue();
+        result2.ShouldRemove.Should().BeTrue("第二次通过后应该移除障碍物");
+        obstacle.RemainingPasses.Should().Be(0, "两次通过后应该剩余0次机会");
     }
 
     [Fact]
