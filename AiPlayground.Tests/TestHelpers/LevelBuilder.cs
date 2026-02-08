@@ -91,6 +91,24 @@ public class LevelBuilder
         return this;
     }
 
+    /// <summary>
+    /// 设置详细的通关条件配置
+    /// </summary>
+    public LevelBuilder WithDetailedVictoryCondition(
+        VictoryConditionType type,
+        int? targetScore = null,
+        int? targetLength = null,
+        bool mustCollectAllFood = false,
+        int? foodSpawnCount = null)
+    {
+        _level.VictoryCondition.Type = type;
+        if (targetScore.HasValue) _level.VictoryCondition.TargetScore = targetScore.Value;
+        if (targetLength.HasValue) _level.VictoryCondition.TargetLength = targetLength.Value;
+        _level.VictoryCondition.MustCollectAllFood = mustCollectAllFood;
+        if (foodSpawnCount.HasValue) _level.VictoryCondition.FoodSpawnCount = foodSpawnCount.Value;
+        return this;
+    }
+
     public LevelBuilder WithGridSize(int width, int height)
     {
         _level.Settings.GridWidth = width;

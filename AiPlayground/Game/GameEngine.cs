@@ -368,10 +368,18 @@ public class GameEngine
             return;
         }
 
+        // 检查是否有关卡模式的"收集所有食物"通关条件
+        bool mustCollectAllFood = _state.CurrentLevel?.VictoryCondition.Type == VictoryConditionType.CollectAllFood
+            || (_state.CurrentLevel?.VictoryCondition.Type == VictoryConditionType.Combined
+                && _state.CurrentLevel.VictoryCondition.MustCollectAllFood);
+
         // 检查是否有限制食物生成数量
-        if (_state.CurrentLevel?.VictoryCondition.FoodSpawnCount.HasValue == true)
+        int? foodSpawnCount = _state.CurrentLevel?.VictoryCondition.FoodSpawnCount;
+
+        // 如果不要求收集所有食物且有限制，正常检查限制
+        if (!mustCollectAllFood && foodSpawnCount.HasValue)
         {
-            int maxFood = _state.CurrentLevel.VictoryCondition.FoodSpawnCount.Value;
+            int maxFood = foodSpawnCount.Value;
             if (_state.TotalFoodSpawned >= maxFood)
             {
                 return; // 已达到最大食物生成数量
@@ -382,30 +390,22 @@ public class GameEngine
         }
 
         // 随机生成食物
-        while (_state.Foods.Count < foodCount)
-        {
-            Point newFood;
-            int attempts = 0;
-            const int maxAttempts = 100; // 限制尝试次数以避免无限循环
-            
-            do
-            {
-                newFood = new Point(
-                    _randomProvider.Next(gridWidth),
-                    _randomProvider.Next(gridHeight)
-                );
-                attempts++;
-                
-                // 如果尝试次数过多，说明网格太拥挤，无法找到合适位置
-                if (attempts >= maxAttempts)
-                {
-                    // 在这种情况下，我们不再继续尝试生成食物
-                    return;
-                }
-            } while (IsOccupied(newFood));
+        int maxTotalAttempts = foodCount * 200; // 为每个食物分配更多尝试次数
+        int totalAttempts = 0;
 
-            _state.Foods.Add(newFood);
-            _state.TotalFoodSpawned++;
+        while (_state.Foods.Count < foodCount && totalAttempts < maxTotalAttempts)
+        {
+            Point newFood = new Point(
+                _randomProvider.Next(gridWidth),
+                _randomProvider.Next(gridHeight)
+            );
+            totalAttempts++;
+
+            if (!IsOccupied(newFood))
+            {
+                _state.Foods.Add(newFood);
+                _state.TotalFoodSpawned++;
+            }
         }
     }
 
