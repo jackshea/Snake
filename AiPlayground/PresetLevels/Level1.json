@@ -25,19 +25,3 @@
     "enableDynamicObstacles": false
   }
 }
-
-/* 测试配置（方便调试时使用）:
-{
-  "victoryCondition": {
-    "targetScore": 10,           // 改为10分，吃1个食物就胜利
-    "foodSpawnCount": 1          // 只生成1个食物
-  },
-  "settings": {
-    "snakeStartPosition": { "x": 5, "y": 10 },
-    "foodCount": 0               // 设为0，使用固定食物位置
-  },
-  "fixedFoodPositions": [        // 固定食物在蛇前方
-    { "x": 6, "y": 10 }
-  ]
-}
-*/
