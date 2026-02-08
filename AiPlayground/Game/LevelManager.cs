@@ -40,14 +40,11 @@ public class LevelManager
             var unlocked = new List<Level>();
             foreach (var level in _presetLevels)
             {
-                if (_progression.IsLevelUnlocked(level.LevelNumber))
+                bool isUnlocked = _progression.IsLevelUnlocked(level.LevelNumber);
+                level.IsUnlocked = isUnlocked;
+                if (isUnlocked)
                 {
-                    level.IsUnlocked = true;
                     unlocked.Add(level);
-                }
-                else
-                {
-                    level.IsUnlocked = false;
                 }
             }
             return unlocked;

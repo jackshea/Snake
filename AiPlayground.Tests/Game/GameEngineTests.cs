@@ -3,6 +3,7 @@ using System.Reflection;
 using AiPlayground.Game;
 using AiPlayground.Models;
 using AiPlayground.Models.Obstacles;
+using AiPlayground.Services;
 using AiPlayground.Tests.TestHelpers;
 using FluentAssertions;
 using Moq;
@@ -715,5 +716,44 @@ public class GameEngineTests
         level.VictoryCondition.Type.Should().Be(VictoryConditionType.CollectAllFood);
         level.VictoryCondition.MustCollectAllFood.Should().BeTrue();
         level.VictoryCondition.FoodSpawnCount.Should().Be(10);
+    }
+
+    [Fact]
+    public void LevelStorageService_ShouldLoadAllPresetLevels()
+    {
+        // Arrange
+        var storageService = new LevelStorageService();
+
+        // Act
+        var levels = storageService.LoadPresetLevels();
+
+        // Assert - 应该能加载5个预设关卡
+        levels.Should().HaveCount(5, "应该有5个预设关卡");
+
+        // 检查每个关卡的序号
+        levels[0].LevelNumber.Should().Be(1);
+        levels[1].LevelNumber.Should().Be(2);
+        levels[2].LevelNumber.Should().Be(3);
+        levels[3].LevelNumber.Should().Be(4);
+        levels[4].LevelNumber.Should().Be(5);
+    }
+
+    [Fact]
+    public void LevelManager_UnlockedPresetLevels_ShouldIncludeLevel4_WhenLevel3Completed()
+    {
+        // Arrange
+        var storageService = new LevelStorageService();
+        var manager = new LevelManager(storageService);
+
+        // 模拟完成第3关后的状态
+        var progression = new LevelProgression();
+        progression.HighestUnlockedLevel = 4; // 完成第3关后解锁第4关
+
+        // Act
+        var unlockedLevels = manager.UnlockedPresetLevels;
+
+        // Assert - 应该包含关卡1-4
+        unlockedLevels.Should().HaveCountGreaterOrEqualTo(4, "至少应该有4个已解锁关卡");
+        unlockedLevels.Count(l => l.LevelNumber == 4).Should().Be(1, "应该包含关卡4");
     }
 }
