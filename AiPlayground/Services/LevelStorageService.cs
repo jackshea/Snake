@@ -48,7 +48,8 @@ public class LevelStorageService
 
         try
         {
-            foreach (var file in Directory.GetFiles(_presetLevelsPath, "*.json"))
+            var files = Directory.GetFiles(_presetLevelsPath, "*.json");
+            foreach (var file in files)
             {
                 try
                 {
@@ -59,9 +60,10 @@ public class LevelStorageService
                         levels.Add(level);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // 忽略单个文件加载错误
+                    // 记录加载失败的文件
+                    System.Diagnostics.Debug.WriteLine($"Failed to load {Path.GetFileName(file)}: {ex.Message}");
                 }
             }
 

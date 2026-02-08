@@ -756,4 +756,73 @@ public class GameEngineTests
         unlockedLevels.Should().HaveCountGreaterOrEqualTo(4, "至少应该有4个已解锁关卡");
         unlockedLevels.Count(l => l.LevelNumber == 4).Should().Be(1, "应该包含关卡4");
     }
+
+    [Fact]
+    public void LevelStorageService_ShouldLoadLevel4_Correctly()
+    {
+        // Arrange
+        var storageService = new LevelStorageService();
+
+        // Act
+        var levels = storageService.LoadPresetLevels();
+        var level4 = levels.FirstOrDefault(l => l.LevelNumber == 4);
+
+        // Assert
+        level4.Should().NotBeNull("关卡4应该被加载");
+        level4!.Name.Should().Be("可破防线");
+        level4.LevelNumber.Should().Be(4);
+        level4.VictoryCondition.Type.Should().Be(VictoryConditionType.CollectAllFood);
+        level4.VictoryCondition.MustCollectAllFood.Should().BeTrue();
+        level4.VictoryCondition.FoodSpawnCount.Should().Be(10);
+    }
+
+    [Fact]
+    public async Task LevelStorageService_ShouldDeserializeLevel4_WithoutErrors()
+    {
+        // Arrange
+        // 使用相对于解决方案目录的路径
+        var solutionDir = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", ".."));
+        var jsonPath = Path.Combine(solutionDir, "AiPlayground", "PresetLevels", "Level4.json");
+
+        var json = await File.ReadAllTextAsync(jsonPath);
+        var options = new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            Converters = { new ObstacleJsonConverter() }
+        };
+
+        // Act
+        var level = System.Text.Json.JsonSerializer.Deserialize<Level>(json, options);
+
+        // Assert
+        level.Should().NotBeNull();
+        level!.LevelNumber.Should().Be(4);
+        level.Name.Should().Be("可破防线");
+        level.Obstacles.Should().HaveCount(14, "关卡4应该有14个障碍物");
+    }
+
+    [Fact]
+    public void Debug_LevelManager_UnlockedLevels_ShouldPrintDebugInfo()
+    {
+        // Arrange
+        var storageService = new LevelStorageService();
+        var manager = new LevelManager(storageService);
+
+        // Act
+        var progression = storageService.LoadProgression();
+        var allLevels = storageService.LoadPresetLevels();
+        var unlockedLevels = manager.UnlockedPresetLevels;
+
+        // Assert - 打印调试信息
+        var allLevelNumbers = string.Join(", ", allLevels.Select(l => l.LevelNumber));
+        var unlockedLevelNumbers = string.Join(", ", unlockedLevels.Select(l => l.LevelNumber));
+
+        Console.WriteLine($"HighestUnlockedLevel: {progression.HighestUnlockedLevel}");
+        Console.WriteLine($"所有关卡: {allLevelNumbers} (共{allLevels.Count}个)");
+        Console.WriteLine($"已解锁关卡: {unlockedLevelNumbers} (共{unlockedLevels.Count}个)");
+
+        // 验证基本断言
+        allLevels.Count.Should().Be(5, "应该有5个预设关卡");
+        unlockedLevels.Count.Should().BeGreaterOrEqualTo(3, "至少应该有3个已解锁关卡（关卡1-3）");
+    }
 }

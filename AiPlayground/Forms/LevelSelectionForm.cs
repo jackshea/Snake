@@ -61,6 +61,13 @@ public class LevelSelectionForm : Form
         {
             AddSectionHeader("预设关卡");
 
+            // 调试信息
+            System.Diagnostics.Debug.WriteLine($"关卡选择界面: 已加载 {presetLevels.Count} 个预设关卡");
+            foreach (var level in presetLevels)
+            {
+                System.Diagnostics.Debug.WriteLine($"  - 关卡 {level.LevelNumber}: {level.Name}");
+            }
+
             var flowPanel = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
